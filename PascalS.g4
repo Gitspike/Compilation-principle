@@ -125,7 +125,6 @@ statement
 	| variable assignop expression									# Assign
 	| call_procedure_statement										# Call
 	| 'if' expression 'then' statement else_part					# If
-	| 'case' expression 'of' case_body 'end'						# Case
 	| 'while' expression 'do' statement								# While
 	| 'repeat' statement_list 'untile' expression					# Repeat
 	| 'for' ID assignop expression updown expression 'do' statement	# For
@@ -149,20 +148,6 @@ else_part
 	|
 	;
 
-/* 选择分支 */
-case_body
-	: branch_list
-	|
-	;
-branch_list
-	: branch_list ';' branch
-	| branch
-	;
-branch: const_list ':' statement;
-const_list
-	: const_list ',' const_variable		# MultiConstList
-	| const_variable					# SingleConstList
-	;
 
 /* 循环 */
 updown: 'to' | 'downto';
