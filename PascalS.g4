@@ -41,7 +41,7 @@ const_declarations
 	;
 const_declaration
 	: const_declaration ';' const_declaration	# MultiConstDeclaration
-	| ID '=' const_variable						# ConstDeclaration
+	| ID '=' const_variable						# SingleConstDeclaration
 	;
 const_variable	// const_variable 定义了常量的具体数值
 	: '+' ID		# PositiveId
@@ -60,10 +60,10 @@ type_declarations
 	;
 type_declaration
 	: type_declaration ';' type_declaration	# MultiTypeDeclaration
-	| ID '=' type							# TypeDeclaration
+	| ID '=' type							# SingleTypeDeclaration
 	;
 type
-	: standard_type // 标准变量类型						# StandardType
+	: standard_type // 标准变量类型						# Standard
 	| 'record' record_body 'end' // 记录型变量			# RecordType
 	| 'array' '[' periods ']' 'of' type	// 数组型变量	# ArrayType
 	; 
@@ -75,7 +75,7 @@ record_body
 	;
 periods
 	: periods ',' period	# MultiPeriod
-	| period				# Period
+	| period				# SinglePeriod
 	;
 period: const_variable '..' const_variable;
 
@@ -86,7 +86,7 @@ var_declarations
 	;
 var_declaration
 	: var_declaration ';' var_declaration	# MultiVarDeclaration
-	| identifier_list ':' type				# VarDeclaration
+	| identifier_list ':' type				# SingleVarDeclaration
 	;
 
 /* 子程序部分，包括可能的多个函数和过程 */
@@ -105,7 +105,7 @@ formal_parameter
 	;
 parameter_lists
 	: parameter_lists ';' parameter_list	# MultiPara
-	| parameter_list						# Para
+	| parameter_list						# SinglePara
 	;
 parameter_list
 	: var_parameter 	# VarPara	// 引用传递
@@ -118,7 +118,7 @@ value_parameter: identifier_list ':' standard_type;
 compound_statement: 'begin' statement_list 'end';
 statement_list
 	: statement_list ';' statement		# MultiStatement
-	| statement							# Statement
+	| statement							# SingleStatement
 	;
 statement
 	: compound_statement											# Block
@@ -161,7 +161,7 @@ branch_list
 branch: const_list ':' statement;
 const_list
 	: const_list ',' const_variable		# MultiConstList
-	| const_variable					# ConstList
+	| const_variable					# SingleConstList
 	;
 
 /* 循环 */
@@ -169,8 +169,10 @@ updown: 'to' | 'downto';
 
 /* 调用过程 */
 call_procedure_statement
-	: ID							# CallWithNoPara 
-	| ID '(' expression_list ')'	# CallWithPara
+	: ID								# CallWithNoPara 
+	| ID '(' expression_list ')'		# CallWithPara
+	| 'writeln' '(' expression_list ')'	# CallWriteln	// 将表达式的结果输出并换行
+	| 'readln' '(' ID ')'				# CallReadln	// 将输入的内容保存在变量中，原版Pascal在这里不会做类型检查
 	;
 
 /* 表达式 */
@@ -193,7 +195,7 @@ term: term mulop factor				# MultiplyOperation
 	;
 factor
 	: unsign_const_variable			# UnsignConst
-	| variable						# Variable
+	| variable						# FactorVariable
 	| ID '(' expression_list ')'	# FactorReturn		// 利用子程序的返回值
 	| '(' expression ')'			# FactorPriority
 	| 'not' factor					# ReverseFactor		// 取反
