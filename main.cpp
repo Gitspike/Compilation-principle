@@ -3,7 +3,9 @@
 #include "antlr4-runtime.h"
 #include "PascalSLexer.h"
 #include "PascalSParser.h"
-#include "PascalSBaseListener.h"
+#include "semantics.hpp"
+#include "SymbolTable.hpp"
+//#include "PascalSBaseListener.h"
 
 using namespace antlr4;
 
@@ -19,8 +21,8 @@ int main(int agrc, char* argv[]){
 
 	// Create parser tree and set initial rule
 	tree::ParseTree *tree = parser.program();
-	PascalSBaseListener listener;
-	//ArrayInitBaseListener listener;
+	semanticsListener listener;
+	//PascalSBaseListener listener;
 	tree::ParseTreeWalker::DEFAULT.walk(&listener, tree);
 
 	return 0;

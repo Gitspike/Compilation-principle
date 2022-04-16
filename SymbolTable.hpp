@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <memory.h>
 
 using namespace std;
 // using namespace llvm;
@@ -56,16 +57,20 @@ typedef struct Table
     PascalSParser::Program_bodyContext *ctx = NULL; //保存子程序的语义动作
     bool is_func = false;
     bool is_proc = false;
+	bool is_const = false;	// 判断该符号是否是常量
+	bool is_type = false;	// 判断该符号是否是类型的别称
     int arguments_num=0;
     string return_value="";
     llvm::FunctionType *functiontype = NULL;
     llvm::Function *function = NULL;
     llvm::BasicBlock *block = NULL;
+	//istd::unique_ptr<llvm::IRBuilder<>> builder;	// 符号的构造器指针
+	//llvm::IRBuilder* build = NULL;
     vector<Argument> arguments; //存放子程序的参数
     
     Table() {}
     /* 变量 */
-    Table(string name, string type, string valve)
+    Table(string name, string type, string value)
     {
         this->name = name;
         this->type = type;
@@ -79,7 +84,7 @@ typedef struct Table
         
     }
 
-    /* 函数 */
+    /* 函数或非变量 */
     Table(string name, string type, bool is_func, bool is_proc)
     {
         this->name = name;
@@ -90,7 +95,7 @@ typedef struct Table
     void push_argument(Argument arg)//将参数加入符号表时调用
     {
         this->arguments.push_back(arg);
-        this->argument_num++;
+        this->arguments_num++;
     }
 
 } table;
@@ -108,8 +113,8 @@ public:
     void pop_table();                      //将一个子程序的符号退栈，退出函数时使用
     bool insert_table(table in_table);     //将符号入栈
     bool check_duplicates(table in_table); //被上面调用
-    bool is_func(table in_table){return in_table.is_func};
-    bool is_proc(table in_table){return in_table.is_proc};
+    bool is_func(table in_table){return in_table.is_func;};
+    bool is_proc(table in_table){return in_table.is_proc;};
     // void set_new_top();
     void pint_table();
 };

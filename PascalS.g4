@@ -15,11 +15,11 @@ COMMENT: '(*' .*? '*)' -> skip;
 MUL_COMMENT: '{' .*? '}' -> skip;
 WS: [ \r\n\t] -> skip;
 
-NUMBER: DIGITS OPTIONAL_FRACTION? OPTIONAL_EXPONENT?; // 匹配无符号的数，若有符号，则在使用的地方前要加 “-”
+NUMBER: DIGITS OPTIONAL_FRACTION?; // 匹配无符号的数，若有符号，则在使用的地方前要加 “-”
 DIGITS: DIGIT+;
 DIGIT: [0-9];
 fragment OPTIONAL_FRACTION: '.' DIGITS;
-fragment OPTIONAL_EXPONENT: [Ee] [+\-]? DIGITS; // 匹配
+//fragment OPTIONAL_EXPONENT: [Ee] [+\-]? DIGITS; // 匹配
 
 program: program_head program_body '.';
 program_head: 'program' ID '(' identifier_list ')' ';'; // 定义程序头，主要包括程序的名字
