@@ -60,17 +60,21 @@ typedef struct Table
     // string parent = "";
     llvm::AllocaInst *all = NULL;        //存放由LLVMAPI生成的变量地址
     int dimension = 0;                   //数组大小
-    vector<string> array_item;           //如果变量是数组，则将其元素放入其中
+    //vector<string> array_item;           //如果变量是数组，则将其元素放入其中
+	
+	// 如果想要取得数组中的数据，应该是计算是否越界->计算相对于起始下标的偏移量->通过llvm api访问
+	vector<pair<int, int>> range;	// 每一个 pair 表示对应维度的起始下标和总宽度
+
     vector<llvm::AllocaInst *> all_item; //同上
 
-    PascalSParser::Program_bodyContext *ctx = NULL; //保存子程序的语义动作
+    PascalSParser::Program_bodyContext *ctx = NULL; //保存子程序的中程序体的上下文对象指针
     bool is_func = false;
     bool is_proc = false;
     bool is_const = false; // 判断该符号是否是常量
     bool is_type = false;  // 判断该符号是否是类型的别称
     bool is_record = false;
 
-    map<string, record_elments> records; //保存结构体的内容
+    map<string, record_elments> records; //保存记录型变量的内容
     int arguments_num = 0;
     string return_value = "";
     llvm::FunctionType *functiontype = NULL;
@@ -94,7 +98,7 @@ typedef struct Table
         this->type = type;
     }
 
-    /* 函数或非变量 */
+    /* 函数 */
     Table(string name, string type, bool is_func, bool is_proc)
     {
         this->name = name;

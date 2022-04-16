@@ -59,8 +59,8 @@ public:
    void enterMultiTypeDeclaration(PascalSParser::MultiTypeDeclarationContext * ctx) override{};
    void exitMultiTypeDeclaration(PascalSParser::MultiTypeDeclarationContext * ctx) override{};
 
-   void enterSingleTypeDeclaration(PascalSParser::SingleTypeDeclarationContext * ctx) override{};
-   void exitSingleTypeDeclaration(PascalSParser::SingleTypeDeclarationContext * ctx) override{};
+   void enterSingleTypeDeclaration(PascalSParser::SingleTypeDeclarationContext * ctx) override;
+   void exitSingleTypeDeclaration(PascalSParser::SingleTypeDeclarationContext * ctx) override;
 
    void enterType(PascalSParser::TypeContext * ctx) override{};
    void exitType(PascalSParser::TypeContext * ctx) override{};
@@ -83,7 +83,7 @@ public:
    void enterVar_declarations(PascalSParser::Var_declarationsContext * ctx) override{};
    void exitVar_declarations(PascalSParser::Var_declarationsContext * ctx) override{};
 
-   void enterSingleVarDeclaration(PascalSParser::SingleVarDeclarationContext * ctx) override{};
+   void enterSingleVarDeclaration(PascalSParser::SingleVarDeclarationContext * ctx) override;
    void exitSingleVarDeclaration(PascalSParser::SingleVarDeclarationContext * ctx) override{};
 
    void enterMultiVarDeclaration(PascalSParser::MultiVarDeclarationContext * ctx) override{};

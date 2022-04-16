@@ -29,7 +29,7 @@ bool SymbolTable::insert_table(table in_table)
 }*/
     else
     {
-        cout << "redeclaration of" << in_table.name << endl;
+        cout << "redeclaration of " << in_table.name << endl;
         return false;
     }
 }
