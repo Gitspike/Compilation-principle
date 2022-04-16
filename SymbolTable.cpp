@@ -68,7 +68,7 @@ void SymbolTable::pop_table()
     this->top--;
     this->top_table.pop_back();
 }
-table SymbolTable::locate_table(string n)
+table& SymbolTable::locate_table(string n)
 {
     int start=this->s_table.size()-1;
     for(int i=start;i>=0;i--)
@@ -91,7 +91,19 @@ void SymbolTable::pint_table()
             <<endl;
     }
 }
-table SymbolTable::get_top_table()
+table& SymbolTable::get_top_table()
 {
     return this->s_table[this->s_table.size()-1];
 }
+
+/* record_elments SymbolTable::get_records_elment(string name)
+{
+    if(this->s_table[this->s_table.size()-1].records.size()==0)
+    {
+        cout<<"err"<<endl;
+    }
+    if(this->s_table[this->s_table.size()-1].records.find(name)!=this->s_table[this->s_table.size()-1].records.end())
+    {
+        return (this->s_table[this->s_table.size()-1].records[name];
+    }
+} */
