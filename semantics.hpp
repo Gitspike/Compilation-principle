@@ -68,8 +68,8 @@ public:
    void enterStandard_type(PascalSParser::Standard_typeContext * ctx) override{};
    void exitStandard_type(PascalSParser::Standard_typeContext * ctx) override{};
 
-   void enterRecord_body(PascalSParser::Record_bodyContext * ctx) override{};
-   void exitRecord_body(PascalSParser::Record_bodyContext * ctx) override{};
+   void enterRecord_body(PascalSParser::Record_bodyContext * ctx) override;
+   void exitRecord_body(PascalSParser::Record_bodyContext * ctx) override;
 
    void enterSinglePeriod(PascalSParser::SinglePeriodContext * ctx) override{};
    void exitSinglePeriod(PascalSParser::SinglePeriodContext * ctx) override{};

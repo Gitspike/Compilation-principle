@@ -14,7 +14,7 @@ bool consist_of(std::string str, std::string range){
 }
 
 std::string type_of (std::string value){
-    // 判断以字符串表示的value的类型，同时将参数改为处理过的数据
+    // 判断以字符串表示的value的类型，需要保证该值是有效的
     if (consist_of(value, "+-1234567890.")){    
         // 数字组成
         if (std::string::npos == value.find('.'))

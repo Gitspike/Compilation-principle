@@ -42,14 +42,14 @@ struct Argument
     bool pass_value = false; //区分是传值还是引用，false为传值
     Argument(){};
 };
-struct record_elments //存放结构体元素
+struct record_elements //存放结构体元素
 {
     string type = "";
     string value = "";
     llvm::AllocaInst *all = NULL;        //存放由LLVMAPI生成的变量地址
-    int dimension = 0;                   //数组大小
-    vector<string> array_item;           //如果变量是数组，则将其元素放入其中
+	bool is_array = false;
     vector<llvm::AllocaInst *> all_item; //同上
+	vector<pair<int, int>> range;
 };
 
 typedef struct Table
@@ -59,11 +59,11 @@ typedef struct Table
     string value = "";
     // string parent = "";
     llvm::AllocaInst *all = NULL;        //存放由LLVMAPI生成的变量地址
-    int dimension = 0;                   //数组大小
     //vector<string> array_item;           //如果变量是数组，则将其元素放入其中
 	
 	// 如果想要取得数组中的数据，应该是计算是否越界->计算相对于起始下标的偏移量->通过llvm api访问
-	vector<pair<int, int>> range;	// 每一个 pair 表示对应维度的起始下标和总宽度
+	vector<pair<int, int>> range;	// 每一个 pair 表示对应维度的起始下标和总宽度，其中起始下标用的是ascii码
+	vector<string> range_type;	// 每一维只能以特定的类型访问
 
     vector<llvm::AllocaInst *> all_item; //同上
 
@@ -73,8 +73,9 @@ typedef struct Table
     bool is_const = false; // 判断该符号是否是常量
     bool is_type = false;  // 判断该符号是否是类型的别称
     bool is_record = false;
+	bool is_array = false;
 
-    map<string, record_elments> records; //保存记录型变量的内容
+    map<string, record_elements> records; //保存记录型变量的内容
     int arguments_num = 0;
     string return_value = "";
     llvm::FunctionType *functiontype = NULL;
