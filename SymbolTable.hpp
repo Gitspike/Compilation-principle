@@ -44,12 +44,13 @@ struct Argument
 };
 struct record_elements //存放结构体元素
 {
-    string type = "";
-    string value = "";
-    llvm::AllocaInst *all = NULL;        //存放由LLVMAPI生成的变量地址
+	string type = "";
+	string value = "";
+	llvm::AllocaInst *all = NULL;        //存放由LLVMAPI生成的变量地址
 	bool is_array = false;
-    vector<llvm::AllocaInst *> all_item; //同上
+	vector<llvm::AllocaInst *> all_item; //同上
 	vector<pair<int, int>> range;
+	vector<string> range_type;
 };
 
 typedef struct Table
@@ -112,7 +113,7 @@ typedef struct Table
         this->arguments.push_back(arg);
         this->arguments_num++;
     }
-    bool push_record_elments(string name, record_elments re)//将结构体元素插入时使用
+    bool push_record_elements(string name, record_elements re)//将结构体元素插入时使用
     {
         if (this->records.find(name) != this->records.end())
         {
@@ -121,7 +122,7 @@ typedef struct Table
         }
         else
         {
-            this->records.insert(pair<string, record_elments>(name, re));
+            this->records.insert(pair<string, record_elements>(name, re));
             return true;
         }
     }

@@ -216,30 +216,94 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 			else if ("real" == var_type){
 				element.type = "real";
 				element.value = "0.0";
-				element.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr)
+				element.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
 				auto value = llvm::ConstantFP::get(llvm::Type::getFloatTy(*semantics::context), 0.0);
-				semantics::builder->CreateStore(value, symbol.all);
+				semantics::builder->CreateStore(value, element.all);
 			}
 			else if ("char" == var_type){
 				element.type = "char";
 				element.value = "\0";
 				element.all = semantics::builder->CreateAlloca(llvm::Type::getInt8Ty(*semantics::context), nullptr);
 				auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), 0);
-				semantics::builder->CreateStore(value, symbol.all);
+				semantics::builder->CreateStore(value, element.all);
 			}
 			else if ("boolean" == var_type){
 				element.type = "boolean";
 				element.value = "false";
 				element.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
 				auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
-				semantics::builder->CreateStore(value, symbol.all);
+				semantics::builder->CreateStore(value, element.all);
 			}
 			else if (0 == var_type.find("array")){
+                // 这里的处理与后面对array符号的处理是基本一致的，但是类型不同，且不会入栈
 				element.is_array = true;
 				std::string array_type = ctx->type()->type()->getText();
 				std::string array_range = ctx->type()->periods()->getText();
+                element.type = array_type;
+                // 接下来需要处理数组的维度，每一维度用逗号区分
+			    std::string period;	// period 表示每一维度的范围
+			    std::string range_begin, range_end;	// 表示每一维的起止符号
+			    int range_split;
+                do{
+				    range_split = array_range.find(',');
+				    period = array_range.substr(0, range_split);
+				    range_begin = period.substr(0, period.find(".."));
+				    range_end = period.substr(period.find("..") + 2);
+				    // 去除begin和end前后的空白字符
+				    range_begin.erase(0, range_begin.find_first_not_of(" "));
+				    range_end.erase(0, range_end.find_first_not_of(" "));
+				    range_begin.erase(range_begin.find_last_not_of(" ") + 1);
+				    range_end.erase(range_end.find_last_not_of(" ") + 1);
+
+				    if ("integer" == type_of(range_begin) and "integer" == type_of(range_end)){
+				    	// 范围必须是整数型，且 end 大于 begin
+				    	int begin = atoi(range_begin.c_str());
+				    	int end = atoi(range_end.c_str());
+				    	if (begin <= end){
+				    		element.range_type.push_back("integer");
+				    		element.range.push_back(std::pair<int, int>(begin, end - begin + 1));
+				    	}
+				    	else{
+				    		std::cout << "Line " << ctx->getStart()->getLine() << ": Unreasonable array range" << std::endl;
+				    	}
+				    }
+				    else if ("char" == type_of(range_begin) and "char" == type_of(range_end)){
+				    	// 范围由单字符组成
+				    	if (range_end[1] >= range_begin[1]){
+				    		element.range_type.push_back("char");
+				    		element.range.push_back(std::pair<int, int>(range_begin[1], range_end[1] - range_begin[1] + 1));
+				    	}
+				    	else{
+				    		std::cout << "Line " << ctx->getStart()->getLine() << ": Unreasonable array range" << std::endl;
+				    	}
+				    }
+				    else{
+				    	// 除了单字符和整数表示，其余的场景是无效的字符范围
+				    	std::cout << "Line " << ctx->getStart()->getLine() << ": Unreasonable array range" << std::endl;
+				    }
+
+				    // 处理完当前维的范围之后，要为当前维度分配空间
+				    int range = (element.range.end() - 1)->second;
+				    if ("integer" == array_type){
+				    	element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), range), nullptr));
+				    }
+				    else if ("char" == array_type){
+				    	element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt8Ty(*semantics::context), range), nullptr));
+				    }
+				    else if ("real" == array_type){
+				    	element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getFloatTy(*semantics::context), range), nullptr));
+				    }
+				    else if ("boolean" == array_type){
+				    	element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), range), nullptr));
+				    }
+				    else{
+				    	// 目前该项目仅支持基础基础类型的数组
+				    	std::cout << "Line " << ctx->getStart()->getLine() << ": Unsupported array type" << std::endl;
+				    }
+				    array_range = array_range.substr(range_split + 1);
+			    }while(std::string::npos != range_split);
 			}
-				
+			symbol.push_record_elements(id, element);
 
 			id_list = id_list.substr(split_pos + 1);    // 将处理后的id剔除出去
 		}while(std::string::npos != split_pos);	
@@ -295,6 +359,7 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 			// 对于一个 record 来说，在当前规则中只能先将该符号入栈
 			// record里面的变量以及 llvm 能做的事必须要到 record_body 中才能做
 			symbol.is_record = true;
+            semantics::stack_st.insert_table(symbol);
 		}
 		else if (0 == var_type.find("array")){
 			std::string array_type = ctx->type()->type()->getText();
@@ -372,6 +437,8 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 
 void semanticsListener::exitProgram_body(PascalSParser::Program_bodyContext *ctx){
 	semantics::stack_st.pint_table();
+	if (0 != semantics::depth)
+		semantics::depth--;
 }
 
 void semanticsListener::enterRecord_body(PascalSParser::Record_bodyContext *ctx){
@@ -385,4 +452,15 @@ void semanticsListener::enterRecord_body(PascalSParser::Record_bodyContext *ctx)
 void semanticsListener::exitRecord_body(PascalSParser::Record_bodyContext *ctx){
 	if (1 == semantics::var_record)
 		semantics::var_record = 0;
+}
+
+void semanticsListener::exitFunctionDeclaration(PascalSParser::FunctionDeclarationContext *ctx){
+	// 从子程序的声明头出来的时候，意味着即将进入子程序的声明体
+	// 但是在声明这里我们是对子程序的程序体不做语义动作的，通过semantics::depth来控制是否跳过
+	semantics::depth++;
+}
+
+void semanticsListener::exitProcedureDeclaration(PascalSParser::ProcedureDeclarationContext *ctx){
+	// 同上
+	semantics::depth++;
 }

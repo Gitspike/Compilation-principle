@@ -96,10 +96,10 @@ public:
    void exitSubprogram_declaration(PascalSParser::Subprogram_declarationContext * ctx) override{};
 
    void enterFunctionDeclaration(PascalSParser::FunctionDeclarationContext * ctx) override{};
-   void exitFunctionDeclaration(PascalSParser::FunctionDeclarationContext * ctx) override{};
+   void exitFunctionDeclaration(PascalSParser::FunctionDeclarationContext * ctx) override;
 
    void enterProcedureDeclaration(PascalSParser::ProcedureDeclarationContext * ctx) override{};
-   void exitProcedureDeclaration(PascalSParser::ProcedureDeclarationContext * ctx) override{};
+   void exitProcedureDeclaration(PascalSParser::ProcedureDeclarationContext * ctx) override;
 
    void enterFormal_parameter(PascalSParser::Formal_parameterContext * ctx) override{};
    void exitFormal_parameter(PascalSParser::Formal_parameterContext * ctx) override{};
