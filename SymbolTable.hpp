@@ -39,6 +39,8 @@ struct Argument
     string name;
     string type;
     string value;
+    string var_name="";//如果是引用，调用函数时记录真正的变量
+    int location=0;//如果是引用，记录真正的变量在符号表中的位置
     bool pass_value = false; //区分是传值还是引用，false为传值
     Argument(){};
 };
@@ -49,6 +51,7 @@ struct record_elements //存放结构体元素
 	llvm::AllocaInst *all = NULL;        //存放由LLVMAPI生成的变量地址
 	bool is_array = false;
 	vector<llvm::AllocaInst *> all_item; //同上
+    vector<string>arr_val;
 	vector<pair<int, int>> range;
 	vector<string> range_type;
 };
@@ -65,8 +68,9 @@ typedef struct Table
 	// 如果想要取得数组中的数据，应该是计算是否越界->计算相对于起始下标的偏移量->通过llvm api访问
 	vector<pair<int, int>> range;	// 每一个 pair 表示对应维度的起始下标和总宽度，其中起始下标用的是ascii码
 	vector<string> range_type;	// 每一维只能以特定的类型访问
-
+    
     vector<llvm::AllocaInst *> all_item; //同上
+    map<int,string>arr_val;
 
     PascalSParser::Program_bodyContext *ctx = NULL; //保存子程序的中程序体的上下文对象指针
     bool is_func = false;
@@ -75,6 +79,7 @@ typedef struct Table
     bool is_type = false;  // 判断该符号是否是类型的别称
     bool is_record = false;
 	bool is_array = false;
+    bool is_arg=false;//判断从gettable方法返回的是符号还是参数
 
     map<string, record_elements> records; //保存记录型变量的内容
     int arguments_num = 0;
@@ -136,6 +141,7 @@ private:
     int top = 0;           //索引表最上方的位置
 
 public:
+    table &get_var_table(int l);
     table &get_top_table();                //参数表加入到子程序的符号表时使用，返回该子程序的结构体
     table &locate_table(string n);         //查找某个ID的结构体，需要检查返回的结构体中type是否为"err"，如果是则表示没有找到，该变量未声明
     void update_top_table();               //更新索引表

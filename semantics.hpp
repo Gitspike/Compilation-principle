@@ -1,7 +1,9 @@
 #include "PascalSBaseListener.h"
+#include "SymbolTable.hpp"
+
 class  semanticsListener: public PascalSBaseListener {
 public:
-
+   //bool Assign(table &t);//赋值的函数
    void enterAssignop(PascalSParser::AssignopContext * ctx) override{};
    void exitAssignop(PascalSParser::AssignopContext * ctx) override{};
 
@@ -20,7 +22,7 @@ public:
    void enterProgram_head(PascalSParser::Program_headContext * ctx) override;
    void exitProgram_head(PascalSParser::Program_headContext * ctx) override{};
 
-   void enterProgram_body(PascalSParser::Program_bodyContext * ctx) override{};
+   void enterProgram_body(PascalSParser::Program_bodyContext * ctx) override;
    void exitProgram_body(PascalSParser::Program_bodyContext * ctx) override;
 
    void enterMultiMainArg(PascalSParser::MultiMainArgContext * ctx) override{};
@@ -92,13 +94,13 @@ public:
    void enterSubprogram_declarations(PascalSParser::Subprogram_declarationsContext * ctx) override{};
    void exitSubprogram_declarations(PascalSParser::Subprogram_declarationsContext * ctx) override{};
 
-   void enterSubprogram_declaration(PascalSParser::Subprogram_declarationContext * ctx) override{};
-   void exitSubprogram_declaration(PascalSParser::Subprogram_declarationContext * ctx) override{};
+   void enterSubprogram_declaration(PascalSParser::Subprogram_declarationContext * ctx) override;
+   void exitSubprogram_declaration(PascalSParser::Subprogram_declarationContext * ctx) override;
 
-   void enterFunctionDeclaration(PascalSParser::FunctionDeclarationContext * ctx) override{};
+   void enterFunctionDeclaration(PascalSParser::FunctionDeclarationContext * ctx) override;
    void exitFunctionDeclaration(PascalSParser::FunctionDeclarationContext * ctx) override;
 
-   void enterProcedureDeclaration(PascalSParser::ProcedureDeclarationContext * ctx) override{};
+   void enterProcedureDeclaration(PascalSParser::ProcedureDeclarationContext * ctx) override;
    void exitProcedureDeclaration(PascalSParser::ProcedureDeclarationContext * ctx) override;
 
    void enterFormal_parameter(PascalSParser::Formal_parameterContext * ctx) override{};
@@ -110,10 +112,10 @@ public:
    void enterSinglePara(PascalSParser::SingleParaContext * ctx) override{};
    void exitSinglePara(PascalSParser::SingleParaContext * ctx) override{};
 
-   void enterVarPara(PascalSParser::VarParaContext * ctx) override{};
+   void enterVarPara(PascalSParser::VarParaContext * ctx) override;
    void exitVarPara(PascalSParser::VarParaContext * ctx) override{};
 
-   void enterValuePara(PascalSParser::ValueParaContext * ctx) override{};
+   void enterValuePara(PascalSParser::ValueParaContext * ctx) override;
    void exitValuePara(PascalSParser::ValueParaContext * ctx) override{};
 
    void enterVar_parameter(PascalSParser::Var_parameterContext * ctx) override{};
@@ -134,8 +136,8 @@ public:
    void enterBlock(PascalSParser::BlockContext * ctx) override{};
    void exitBlock(PascalSParser::BlockContext * ctx) override{};
 
-   void enterAssign(PascalSParser::AssignContext * ctx) override{};
-   void exitAssign(PascalSParser::AssignContext * ctx) override{};
+   void enterAssign(PascalSParser::AssignContext * ctx) override;
+   void exitAssign(PascalSParser::AssignContext * ctx) override;
 
    void enterCall(PascalSParser::CallContext * ctx) override{};
    void exitCall(PascalSParser::CallContext * ctx) override{};
@@ -158,16 +160,16 @@ public:
    void enterNone(PascalSParser::NoneContext * ctx) override{};
    void exitNone(PascalSParser::NoneContext * ctx) override{};
 
-   void enterVariable(PascalSParser::VariableContext * ctx) override{};
-   void exitVariable(PascalSParser::VariableContext * ctx) override{};
+   void enterVariable(PascalSParser::VariableContext * ctx) override;
+   void exitVariable(PascalSParser::VariableContext * ctx) override;
 
-   void enterId_varparts(PascalSParser::Id_varpartsContext * ctx) override{};
-   void exitId_varparts(PascalSParser::Id_varpartsContext * ctx) override{};
+   void enterId_varparts(PascalSParser::Id_varpartsContext * ctx) override;
+   void exitId_varparts(PascalSParser::Id_varpartsContext * ctx) override;
 
-   void enterArrayAccess(PascalSParser::ArrayAccessContext * ctx) override{};
+   void enterArrayAccess(PascalSParser::ArrayAccessContext * ctx) override;
    void exitArrayAccess(PascalSParser::ArrayAccessContext * ctx) override{};
 
-   void enterRecordAccess(PascalSParser::RecordAccessContext * ctx) override{};
+   void enterRecordAccess(PascalSParser::RecordAccessContext * ctx) override;
    void exitRecordAccess(PascalSParser::RecordAccessContext * ctx) override{};
 
    void enterElse_part(PascalSParser::Else_partContext * ctx) override{};
@@ -215,8 +217,8 @@ public:
    void enterPositiveTerm(PascalSParser::PositiveTermContext * ctx) override{};
    void exitPositiveTerm(PascalSParser::PositiveTermContext * ctx) override{};
 
-   void enterAddOperation(PascalSParser::AddOperationContext * ctx) override{};
-   void exitAddOperation(PascalSParser::AddOperationContext * ctx) override{};
+   void enterAddOperation(PascalSParser::AddOperationContext * ctx) override;
+   void exitAddOperation(PascalSParser::AddOperationContext * ctx) override;
 
    void enterNegativeTerm(PascalSParser::NegativeTermContext * ctx) override{};
    void exitNegativeTerm(PascalSParser::NegativeTermContext * ctx) override{};
@@ -224,14 +226,14 @@ public:
    void enterNoMultiplyOperation(PascalSParser::NoMultiplyOperationContext * ctx) override{};
    void exitNoMultiplyOperation(PascalSParser::NoMultiplyOperationContext * ctx) override{};
 
-   void enterMultiplyOperation(PascalSParser::MultiplyOperationContext * ctx) override{};
-   void exitMultiplyOperation(PascalSParser::MultiplyOperationContext * ctx) override{};
+   void enterMultiplyOperation(PascalSParser::MultiplyOperationContext * ctx) override;
+   void exitMultiplyOperation(PascalSParser::MultiplyOperationContext * ctx) override;
 
    void enterUnsignConst(PascalSParser::UnsignConstContext * ctx) override{};
    void exitUnsignConst(PascalSParser::UnsignConstContext * ctx) override{};
 
-   void enterFactorVariable(PascalSParser::FactorVariableContext * ctx) override{};
-   void exitFactorVariable(PascalSParser::FactorVariableContext * ctx) override{};
+   void enterFactorVariable(PascalSParser::FactorVariableContext * ctx) override;
+   void exitFactorVariable(PascalSParser::FactorVariableContext * ctx) override;
 
    void enterFactorReturn(PascalSParser::FactorReturnContext * ctx) override{};
    void exitFactorReturn(PascalSParser::FactorReturnContext * ctx) override{};
@@ -240,15 +242,15 @@ public:
    void exitFactorPriority(PascalSParser::FactorPriorityContext * ctx) override{};
 
    void enterReverseFactor(PascalSParser::ReverseFactorContext * ctx) override{};
-   void exitReverseFactor(PascalSParser::ReverseFactorContext * ctx) override{};
+   void exitReverseFactor(PascalSParser::ReverseFactorContext * ctx) override;
 
-   void enterUnsignConstId(PascalSParser::UnsignConstIdContext * ctx) override{};
+   void enterUnsignConstId(PascalSParser::UnsignConstIdContext * ctx) override;
    void exitUnsignConstId(PascalSParser::UnsignConstIdContext * ctx) override{};
 
-   void enterUnsignConstNumber(PascalSParser::UnsignConstNumberContext * ctx) override{};
+   void enterUnsignConstNumber(PascalSParser::UnsignConstNumberContext * ctx) override;
    void exitUnsignConstNumber(PascalSParser::UnsignConstNumberContext * ctx) override{};
 
-   void enterUnsignConstChar(PascalSParser::UnsignConstCharContext * ctx) override{};
+   void enterUnsignConstChar(PascalSParser::UnsignConstCharContext * ctx) override;
    void exitUnsignConstChar(PascalSParser::UnsignConstCharContext * ctx) override{};
 
 
@@ -256,6 +258,8 @@ public:
    void exitEveryRule(antlr4::ParserRuleContext * ctx) override{};
    void visitTerminal(antlr4::tree::TerminalNode * node) override{};
    void visitErrorNode(antlr4::tree::ErrorNode * node) override{};
+
+   
 
 };
 

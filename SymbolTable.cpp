@@ -68,32 +68,48 @@ void SymbolTable::pop_table()
     this->top--;
     this->top_table.pop_back();
 }
-table& SymbolTable::locate_table(string n)
+table &SymbolTable::locate_table(string n)
 {
-    int start=this->s_table.size()-1;
-    for(int i=start;i>=0;i--)
+    int start = this->s_table.size() - 1;
+    for (int i = start; i >= 0; i--)
     {
-        if(this->s_table[i].name==n)
+        if (this->s_table[i].is_func || this->s_table[i].is_proc)
+        {
+            for (int j = 0; j < this->s_table[i].arguments_num; j++)
+            {
+                if (this->s_table[i].arguments[j].name == n && this->s_table[i].arguments[j].pass_value)
+                {
+                    this->s_table[i].is_arg=true;
+                    return this->s_table[i];
+                }
+            }
+        }
+        else if (this->s_table[i].name == n)
             return s_table[i];
     }
-    string err="err";
-    this->s_table[0].type=err;
+    string err = "err";
+    this->s_table[0].type = err;
     return s_table[0];
 }
 void SymbolTable::pint_table()
 {
-    
-    int start=this->s_table.size()-1;
-    for(int i=0;i<=start;i++)
+
+    int start = this->s_table.size() - 1;
+    for (int i = 0; i <= start; i++)
     {
-        cout<<"name: "<<this->s_table[i].name
-            <<"  type: "<<this->s_table[i].type
-            <<endl;
+        cout << "name: " << this->s_table[i].name
+             << "  type: " << this->s_table[i].type
+             <<"   value: "<<this->s_table[i].value
+             << endl;
     }
 }
-table& SymbolTable::get_top_table()
+table &SymbolTable::get_top_table()
 {
-    return this->s_table[this->s_table.size()-1];
+    return this->s_table[this->s_table.size() - 1];
+}
+table &SymbolTable::get_var_table(int l)
+{
+    return this->s_table[l];
 }
 
 /* record_elments SymbolTable::get_records_elment(string name)
