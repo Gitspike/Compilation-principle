@@ -1232,7 +1232,7 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 			auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
 			auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
 
-			semantics::builder->CreateAdd(value1, value2);
+			semantics::builder->CreateFAdd(value1, value2);
 			double r = atof(left.c_str()) + atof(right.c_str());
 			/* ostringstream os;
 			os << r; */
@@ -1272,7 +1272,7 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 			auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
 			auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
 
-			semantics::builder->CreateSub(value1, value2);
+			semantics::builder->CreateFSub(value1, value2);
 			double r = atof(left.c_str()) - atof(right.c_str());
 			/* ostringstream os;
 			os << r; */
@@ -1337,7 +1337,7 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 			auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
 			auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
 
-			semantics::builder->CreateMul(value1, value2);
+			semantics::builder->CreateFMul(value1, value2);
 			double r = atof(left.c_str()) * atof(right.c_str());
 			/* ostringstream os;
 			os << r; */
@@ -1379,7 +1379,7 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 			auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(left.c_str()));
 			auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
 
-			semantics::builder->CreateUDiv(value1, value2);
+			semantics::builder->CreateSDiv(value1, value2);
 			int r = atoi(left.c_str()) / atoi(right.c_str());
 			/* ostringstream os;
 			os << r;
@@ -1393,7 +1393,7 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 			auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
 			auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
 
-			semantics::builder->CreateUDiv(value1, value2);
+			semantics::builder->CreateFDiv(value1, value2);
 			// semantics::builder->CreateMod(value1, value2);
 			double r = atof(left.c_str()) / atof(right.c_str());
 			r = r / 1.0;
@@ -1403,6 +1403,35 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
 		}
+	}
+	else if("mod"==mulop)
+	{
+		if (left_type != right_type)
+		{
+			cout << "line:" << ctx->getStart()->getLine() << "   cannot multiply variables of different types" << endl;
+			return;
+		}
+		if ("char" == right_type || "boolean" == right_type || "char" == left_type || "boolean" == left_type||"real" == right_type || "real" == left_type)
+		{
+			cout << "line:" << ctx->getStart()->getLine() << "    these variable cannot be multiplied" << endl;
+			return;
+		}
+		if ("integer" == left_type && "integer" == right_type)
+		{
+
+			semantics::exp_type.push_back("integer");
+			auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(left.c_str()));
+			auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
+
+			semantics::builder->CreateSRem(value1, value2);
+			int r = atoi(left.c_str()) % atoi(right.c_str());
+			/* ostringstream os;
+			os << r;
+			string result(os.str()); */
+			string result = to_string(r);
+			semantics::exp_value.push_back(result);
+		}
+		
 	}
 }
 void semanticsListener::enterUnsignConstId(PascalSParser::UnsignConstIdContext *ctx)
