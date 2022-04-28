@@ -339,31 +339,35 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 						std::cout << "Line " << ctx->getStart()->getLine() << ": Unreasonable array range" << std::endl;
 					}
 
-					// 处理完当前维的范围之后，要为当前维度分配空间
-					int range = (element.range.end() - 1)->second;
-					if ("integer" == array_type)
-					{
-						element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), range), nullptr));
-					}
-					else if ("char" == array_type)
-					{
-						element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt8Ty(*semantics::context), range), nullptr));
-					}
-					else if ("real" == array_type)
-					{
-						element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getFloatTy(*semantics::context), range), nullptr));
-					}
-					else if ("boolean" == array_type)
-					{
-						element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), range), nullptr));
-					}
-					else
-					{
-						// 目前该项目仅支持基础基础类型的数组
-						std::cout << "Line " << ctx->getStart()->getLine() << ": Unsupported array type" << std::endl;
-					}
 					array_range = array_range.substr(range_split + 1);
 				} while (std::string::npos != range_split);
+				// 处理完每一维度的之后，要为数组分配总空间
+				int range = 1;
+				for (auto iter = element.range.begin(); iter != element.range.end(); iter++){
+					range *= iter->second;
+				}
+				//int range = (element.range.end() - 1)->second;
+				if ("integer" == array_type)
+				{
+					element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), range), nullptr));
+				}
+				else if ("char" == array_type)
+				{
+					element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt8Ty(*semantics::context), range), nullptr));
+				}
+				else if ("real" == array_type)
+				{
+					element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getFloatTy(*semantics::context), range), nullptr));
+				}
+				else if ("boolean" == array_type)
+				{
+					element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), range), nullptr));
+				}
+				else
+				{
+					// 目前该项目仅支持基础基础类型的数组
+					std::cout << "Line " << ctx->getStart()->getLine() << ": Unsupported array type" << std::endl;
+				}
 			}
 			symbol.push_record_elements(id, element);
 
@@ -487,35 +491,44 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 					std::cout << "Line " << ctx->getStart()->getLine() << ": Unreasonable array range" << std::endl;
 				}
 
-				// 处理完当前维的范围之后，要为当前维度分配空间
-				int range = (symbol.range.end() - 1)->second;
-				if ("integer" == array_type)
-				{
-					symbol.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), range), nullptr));
-				}
-				else if ("char" == array_type)
-				{
-					symbol.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt8Ty(*semantics::context), range), nullptr));
-				}
-				else if ("real" == array_type)
-				{
-					symbol.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getFloatTy(*semantics::context), range), nullptr));
-				}
-				else if ("boolean" == array_type)
-				{
-					symbol.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), range), nullptr));
-				}
-				else
-				{
-					// 目前该项目仅支持基础基础类型的数组
-					std::cout << "Line " << ctx->getStart()->getLine() << ": Unsupported array type" << std::endl;
-				}
 				array_range = array_range.substr(range_split + 1);
 			} while (std::string::npos != range_split);
+			// 处理完所有维度的范围之后，要为数组分配总空间
+			int range = 1;
+			for (auto iter = symbol.range.begin(); iter != symbol.range.end(); iter++){
+				range *= iter->second;
+			}
+			//int range = (symbol.range.end() - 1)->second;
+			if ("integer" == array_type)
+			{
+				symbol.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), range), nullptr));
+			}
+			else if ("char" == array_type)
+			{
+				symbol.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt8Ty(*semantics::context), range), nullptr));
+			}
+			else if ("real" == array_type)
+			{
+				symbol.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getFloatTy(*semantics::context), range), nullptr));
+			}
+			else if ("boolean" == array_type)
+			{
+				symbol.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), range), nullptr));
+			}
+			else
+			{
+				// 目前该项目仅支持基础基础类型的数组
+				std::cout << "Line " << ctx->getStart()->getLine() << ": Unsupported array type" << std::endl;
+			}
 			semantics::stack_st.insert_table(symbol);
 		}
 		id_list = id_list.substr(split_pos + 1); // 将处理后的id剔除出去
 	} while (std::string::npos != split_pos);
+}
+
+void semanticsListener::exitProgram(PascalSParser::ProgramContext *ctx)
+{
+	semantics::mod->print(llvm::outs(), nullptr);  // 打印ir
 }
 
 void semanticsListener::exitProgram_body(PascalSParser::Program_bodyContext *ctx)

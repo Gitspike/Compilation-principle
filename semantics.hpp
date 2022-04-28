@@ -17,7 +17,7 @@ public:
    void exitMulop(PascalSParser::MulopContext * ctx) override{};
 
    void enterProgram(PascalSParser::ProgramContext * ctx) override;
-   void exitProgram(PascalSParser::ProgramContext * ctx) override{};
+   void exitProgram(PascalSParser::ProgramContext * ctx) override;
 
    void enterProgram_head(PascalSParser::Program_headContext * ctx) override;
    void exitProgram_head(PascalSParser::Program_headContext * ctx) override{};
