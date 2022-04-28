@@ -1,27 +1,29 @@
 program main(input);
 var 
-a,b,d:integer;
+a,b,d,h:integer;
 g:boolean;
 e,f:real;
 c:array[1..3,2..4]of integer;
     function p(n2:integer):integer;
     var v:integer;
-        procedure p1(var n1,n2:integer);
+        function p1(var n1:integer):integer;
         var m:integer;
         begin
-            m:=4;
-            n1:=m;
+            v:=4;
+            n1:=3;
             n2:=9;
+            p1:=7;
         end;
     begin
-        a:=1;
+        a:=5;
         v:=a;
         p:=2;
-        p1(a,v);
+        h:=p1(a);
     end;
 begin
+b:=1;
 d:=7;
 d:=6;
 d:=9;
-d:=p(b);
+d:=p(b)*2;
 end.

@@ -832,6 +832,8 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
 					semantics::builder->CreateStore(value, temp.all); */
 					temp2.value = semantics::exp_value.back();
+					semantics::exp_type.pop_back();
+					semantics::exp_value.pop_back();
 				}
 				else if ("char" == semantics::exp_type.back())
 				{
@@ -844,6 +846,8 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
 					semantics::builder->CreateStore(value, temp2.all);
 					temp2.value = semantics::exp_value.back();
+					semantics::exp_type.pop_back();
+					semantics::exp_value.pop_back();
 				}
 				else if ("real" == semantics::exp_type.back())
 				{
@@ -855,6 +859,8 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
 					semantics::builder->CreateStore(value, temp2.all);
 					temp2.value = semantics::exp_value.back();
+					semantics::exp_type.pop_back();
+					semantics::exp_value.pop_back();
 				}
 				else if ("boolean" == semantics::exp_type.back())
 				{
@@ -880,12 +886,13 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), b);
 					semantics::builder->CreateStore(value, temp2.all);
 					temp2.value = semantics::exp_value.back();
+					semantics::exp_type.pop_back();
+					semantics::exp_value.pop_back();
 				}
-				semantics::exp_type.pop_back();
-				semantics::exp_value.pop_back();
-				semantics::index.pop_back();
-				return;
 			}
+
+			semantics::index.pop_back();
+			return;
 		}
 		/* 函数返回值的赋值 */
 		else if (temp.is_func)
@@ -2064,9 +2071,16 @@ void semanticsListener::enterCallWithPara(PascalSParser::CallWithParaContext *ct
 
 	semanticsListener listener;
 	antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, temp.ctx);
+	cout << "BBBBBBB  " << semantics::exp_value.size() << endl;
+
 	semantics::stack_st.pop_table();
 }
 void semanticsListener::enterFactorReturn(PascalSParser::FactorReturnContext *ctx)
+{
+	if (semantics::depth != 0)
+		return;
+}
+void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx)
 {
 	if (semantics::depth != 0)
 		return;
@@ -2139,10 +2153,11 @@ void semanticsListener::enterFactorReturn(PascalSParser::FactorReturnContext *ct
 				}
 				table t(a.name, a.type, temp.value);
 				semantics::stack_st.insert_table(t);
-				cout<<"ZZZZZZ:"<<endl;
+				cout << "ZZZZZZ:" << endl;
 				for (int m = semantics::exp_value.size() - 1; m >= 0; m--)
 				{
-					cout << semantics::exp_value[m] << endl<<endl;
+					cout << semantics::exp_value[m] << endl
+						 << endl;
 				}
 			}
 			else if (a.pass_value)
@@ -2180,4 +2195,5 @@ void semanticsListener::enterFactorReturn(PascalSParser::FactorReturnContext *ct
 	semantics::exp_value.push_back(temp.value);
 	// temp.value="";
 	semantics::stack_st.pop_table();
+	cout << "EXIT:: " << semantics::exp_value.size() << endl;
 }

@@ -236,7 +236,7 @@ public:
    void exitFactorVariable(PascalSParser::FactorVariableContext * ctx) override;
 
    void enterFactorReturn(PascalSParser::FactorReturnContext * ctx) override;
-   void exitFactorReturn(PascalSParser::FactorReturnContext * ctx) override{};
+   void exitFactorReturn(PascalSParser::FactorReturnContext * ctx) override;
 
    void enterFactorPriority(PascalSParser::FactorPriorityContext * ctx) override{};
    void exitFactorPriority(PascalSParser::FactorPriorityContext * ctx) override{};

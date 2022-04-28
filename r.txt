@@ -2,6 +2,7 @@ name: main  type: main   value:
 name: a  type: integer   value: 0
 name: b  type: integer   value: 0
 name: d  type: integer   value: 0
+name: h  type: integer   value: 0
 name: g  type: boolean   value: false
 name: e  type: real   value: 0
 name: f  type: real   value: 0
@@ -11,6 +12,7 @@ name: main  type: main   value:
 name: a  type: integer   value: 0
 name: b  type: integer   value: 0
 name: d  type: integer   value: 0
+name: h  type: integer   value: 0
 name: g  type: boolean   value: false
 name: e  type: real   value: 0
 name: f  type: real   value: 0
@@ -23,57 +25,77 @@ val=1
 9
 val=1
 ZZZZZZ:
-YYYYYY size:0
+1
+
+YYYYYY size:1
 name: main  type: main   value: 
 name: a  type: integer   value: 0
-name: b  type: integer   value: 0
+name: b  type: integer   value: 1
 name: d  type: integer   value: 9
+name: h  type: integer   value: 0
 name: g  type: boolean   value: false
 name: e  type: real   value: 0
 name: f  type: real   value: 0
 name: c  type: integer   value: integer
 name: p  type: integer   value: 
-name: n2  type: integer   value: 0
+name: n2  type: integer   value: 1
 name: v  type: integer   value: 0
-name: p1  type:    value: 
+name: p1  type: integer   value: 
+YYYYYY size:2
+Line:13    Cannot assign values to variables of different types
+Line:15    Cannot assign values to variables of different types
 name: main  type: main   value: 
-name: a  type: integer   value: 4
-name: b  type: integer   value: 0
+name: a  type: integer   value: 5
+name: b  type: integer   value: 1
 name: d  type: integer   value: 9
+name: h  type: integer   value: 0
 name: g  type: boolean   value: false
 name: e  type: real   value: 0
 name: f  type: real   value: 0
 name: c  type: integer   value: integer
 name: p  type: integer   value: 2
-name: n2  type: integer   value: 0
-name: v  type: integer   value: 9
-name: p1  type:    value: 
-name: m  type: integer   value: 4
-name: main  type: main   value: 
-name: a  type: integer   value: 4
-name: b  type: integer   value: 0
-name: d  type: integer   value: 9
-name: g  type: boolean   value: false
-name: e  type: real   value: 0
-name: f  type: real   value: 0
-name: c  type: integer   value: integer
-name: p  type: integer   value: 2
-name: n2  type: integer   value: 0
-name: v  type: integer   value: 9
-name: p1  type:    value: 
- XXXXXX size: 2
-9
-4
+name: n2  type: integer   value: 9
+name: v  type: integer   value: 4
+name: p1  type: integer   value: 
+name: m  type: integer   value: 0
+ XXXXXX size: 4
+7
+3
+5
+1
 hhh:
-0
-2
-9
-4
-val=4
+EXIT:: 5
 name: main  type: main   value: 
-name: a  type: integer   value: 4
-name: b  type: integer   value: 0
-name: d  type: integer   value: 0
+name: a  type: integer   value: 5
+name: b  type: integer   value: 1
+name: d  type: integer   value: 9
+name: h  type: integer   value: 
+name: g  type: boolean   value: false
+name: e  type: real   value: 0
+name: f  type: real   value: 0
+name: c  type: integer   value: integer
+name: p  type: integer   value: 2
+name: n2  type: integer   value: 9
+name: v  type: integer   value: 4
+name: p1  type: integer   value: 
+ XXXXXX size: 4
+7
+3
+5
+1
+hhh:
+EXIT:: 5
+4
+7
+3
+5
+1
+val=5
+name: main  type: main   value: 
+name: a  type: integer   value: 5
+name: b  type: integer   value: 1
+name: d  type: integer   value: 4
+name: h  type: integer   value: 
 name: g  type: boolean   value: false
 name: e  type: real   value: 0
 name: f  type: real   value: 0
@@ -93,24 +115,28 @@ define i32 @main() {
   store i32 0, i32* %3
   %4 = alloca i32
   store i32 0, i32* %4
-  %5 = alloca float
-  store float 0.000000e+00, float* %5
+  %5 = alloca i32
+  store i32 0, i32* %5
   %6 = alloca float
   store float 0.000000e+00, float* %6
-  %7 = alloca [9 x i32]
+  %7 = alloca float
+  store float 0.000000e+00, float* %7
+  %8 = alloca [9 x i32]
+  store i32 1, i32* %2
   store i32 7, i32* %3
   store i32 6, i32* %3
   store i32 9, i32* %3
-  %8 = alloca i32
-  store i32 0, i32* %8
-  store i32 1, i32* %1
-  store i32 1, i32* %8
   %9 = alloca i32
-  store i32 2, i32* %9
+  store i32 0, i32* %9
+  store i32 5, i32* %1
+  store i32 5, i32* %9
   %10 = alloca i32
-  store i32 0, i32* %10
-  store i32 4, i32* %10
-  store i32 4, i32* %1
-  store i32 9, i32* %8
-  store i32 0, i32* %3
+  store i32 2, i32* %10
+  %11 = alloca i32
+  store i32 0, i32* %11
+  store i32 4, i32* %9
+  %12 = alloca i32
+  store i32 9, i32* %12
+  store i32 0, i32* %4
+  store i32 4, i32* %3
 }
