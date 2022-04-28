@@ -133,8 +133,8 @@ statement
 	;
 
 /* 变量赋值 */
-variable: ID id_varparts;
-id_varparts
+~variable: ID id_varparts;
+~id_varparts
 	: id_varparts id_varpart
 	|
 	;
@@ -169,8 +169,8 @@ updown: 'to' | 'downto';
 
 /* 调用过程 */
 call_procedure_statement
-	: ID								# CallWithNoPara 
-	| ID '(' expression_list ')'		# CallWithPara
+	: ~ID								# CallWithNoPara 
+	| ~ID '(' expression_list ')'		# CallWithPara
 	| 'writeln' '(' expression_list ')'	# CallWriteln	// 将表达式的结果输出并换行
 	| 'readln' '(' ID ')'				# CallReadln	// 将输入的内容保存在变量中，原版Pascal在这里不会做类型检查
 	;
@@ -187,13 +187,13 @@ expression
 simple_expression
 	: term									# PositiveTerm
 	| '+' term								# PositiveTerm
-	| '-' term								# NegativeTerm
-	| simple_expression addop term			# AddOperation
+	| ~'-' term								# NegativeTerm
+	| ~simple_expression addop term			# AddOperation
 	;
-term: term mulop factor				# MultiplyOperation
+~term: term mulop factor				# MultiplyOperation
 	| factor						# NoMultiplyOperation
 	;
-factor
+~factor
 	: unsign_const_variable			# UnsignConst
 	| variable						# FactorVariable
 	| ID '(' expression_list ')'	# FactorReturn		// 利用子程序的返回值

@@ -75,6 +75,8 @@ table &SymbolTable::locate_table(string n)
     {
         if (this->s_table[i].is_func || this->s_table[i].is_proc)
         {
+            if(n==this->s_table[i].name)
+                return s_table[i];
             for (int j = 0; j < this->s_table[i].arguments_num; j++)
             {
                 if (this->s_table[i].arguments[j].name == n && this->s_table[i].arguments[j].pass_value)

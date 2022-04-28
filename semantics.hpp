@@ -113,7 +113,7 @@ public:
    void exitSinglePara(PascalSParser::SingleParaContext * ctx) override{};
 
    void enterVarPara(PascalSParser::VarParaContext * ctx) override;
-   void exitVarPara(PascalSParser::VarParaContext * ctx) override{};
+   void exitVarPara(PascalSParser::VarParaContext * ctx) override;
 
    void enterValuePara(PascalSParser::ValueParaContext * ctx) override;
    void exitValuePara(PascalSParser::ValueParaContext * ctx) override{};
@@ -193,10 +193,10 @@ public:
    void enterUpdown(PascalSParser::UpdownContext * ctx) override{};
    void exitUpdown(PascalSParser::UpdownContext * ctx) override{};
 
-   void enterCallWithNoPara(PascalSParser::CallWithNoParaContext * ctx) override{};
+   void enterCallWithNoPara(PascalSParser::CallWithNoParaContext * ctx) override;
    void exitCallWithNoPara(PascalSParser::CallWithNoParaContext * ctx) override{};
 
-   void enterCallWithPara(PascalSParser::CallWithParaContext * ctx) override{};
+   void enterCallWithPara(PascalSParser::CallWithParaContext * ctx) override;
    void exitCallWithPara(PascalSParser::CallWithParaContext * ctx) override{};
 
    void enterCallWriteln(PascalSParser::CallWritelnContext * ctx) override{};
@@ -221,7 +221,7 @@ public:
    void exitAddOperation(PascalSParser::AddOperationContext * ctx) override;
 
    void enterNegativeTerm(PascalSParser::NegativeTermContext * ctx) override{};
-   void exitNegativeTerm(PascalSParser::NegativeTermContext * ctx) override{};
+   void exitNegativeTerm(PascalSParser::NegativeTermContext * ctx) override;
 
    void enterNoMultiplyOperation(PascalSParser::NoMultiplyOperationContext * ctx) override{};
    void exitNoMultiplyOperation(PascalSParser::NoMultiplyOperationContext * ctx) override{};
@@ -235,7 +235,7 @@ public:
    void enterFactorVariable(PascalSParser::FactorVariableContext * ctx) override;
    void exitFactorVariable(PascalSParser::FactorVariableContext * ctx) override;
 
-   void enterFactorReturn(PascalSParser::FactorReturnContext * ctx) override{};
+   void enterFactorReturn(PascalSParser::FactorReturnContext * ctx) override;
    void exitFactorReturn(PascalSParser::FactorReturnContext * ctx) override{};
 
    void enterFactorPriority(PascalSParser::FactorPriorityContext * ctx) override{};

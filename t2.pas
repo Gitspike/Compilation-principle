@@ -4,22 +4,24 @@ a,b,d:integer;
 g:boolean;
 e,f:real;
 c:array[1..3,2..4]of integer;
+    function p(n2:integer):integer;
+    var v:integer;
+        procedure p1(var n1,n2:integer);
+        var m:integer;
+        begin
+            m:=4;
+            n1:=m;
+            n2:=9;
+        end;
+    begin
+        a:=1;
+        v:=a;
+        p:=2;
+        p1(a,v);
+    end;
 begin
-b:=2;
-a:=b mod 5;
-b:=b+2;
-e:=(0.15-2)*2; 
-{b:=2+1;
-{ b:=2*3; }
-{e:=b/e;}
-//a:=5;
-{ a:=1*7;
-a:=10; }
-{a:=+1;
-{e:=b/e; }
-{f:=a/e;}
-
-{g:=true; }
-
-{a:=c[3][4]; }
+d:=7;
+d:=6;
+d:=9;
+d:=p(b);
 end.

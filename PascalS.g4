@@ -195,12 +195,12 @@ term: term mulop factor				# MultiplyOperation
 	;
 factor
 	: unsign_const_variable			# UnsignConst
-	| ~variable						# FactorVariable
+	| variable						# FactorVariable
 	| ID '(' expression_list ')'	# FactorReturn		// 利用子程序的返回值
 	| '(' expression ')'			# FactorPriority
-	| ~'not' factor					# ReverseFactor		// 取反
+	| 'not' factor					# ReverseFactor		// 取反
 	;
-~unsign_const_variable
+unsign_const_variable
 	: ID 			# UnsignConstId
 	| NUMBER 		# UnsignConstNumber
 	| CONST_CHAR	# UnsignConstChar
