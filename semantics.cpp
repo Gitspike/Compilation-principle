@@ -15,9 +15,8 @@ namespace semantics
 	std::unique_ptr<llvm::Module> mod;			// 同上
 	std::unique_ptr<llvm::IRBuilder<>> builder;
 	vector<string> exp_type;
-	vector<string> exp_value;
-	vector<string> exp_id;
-	// vector<llvm::Value *> llvm_value;
+	vector<string> exp_value;			// 该值仅是给人和符号表看的，在计算时不要用直接用这里的值
+	vector<llvm::Value*> llvm_value;	// llvm_value 保存 llvm 形式的值，当需要值的时候，可以取出来；保存时，可能需要用到 CreateLoad 等 api
 	vector<int> index;	   //存放数组下标
 	int is_assign;		   //为1时表示数组或记录在赋值号左侧，为2时表示在赋值号右侧
 	int cur_range;		   //当前数组的维度
@@ -715,16 +714,16 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					/* real型可以兼容integer */
 					if ("integer" == temp.type)
 					{
-						int integer = atoi(semantics::exp_value.back().c_str());
+						// int integer = atoi(semantics::exp_value.back().c_str());
 						// cout<<"int:"<<integer<<endl;
-						auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
-						semantics::builder->CreateStore(value, temp.all);
+						// auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+						semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					}
 					else if ("real" == temp.type)
 					{
-						int integer = atoi(semantics::exp_value.back().c_str());
-						auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), integer);
-						semantics::builder->CreateStore(value, temp.all);
+						// int integer = atoi(semantics::exp_value.back().c_str());
+						// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), integer);
+						semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					}
 					temp.value = semantics::exp_value.back();
 				}
@@ -734,10 +733,10 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					{
 						temp.all = semantics::builder->CreateAlloca(llvm::Type::getInt8Ty(*semantics::context), nullptr);
 					}
-					char ch = atoi(semantics::exp_value.back().c_str());
+					// char ch = atoi(semantics::exp_value.back().c_str());
 					// cout << "ch:" << ch << endl;
-					auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
-					semantics::builder->CreateStore(value, temp.all);
+					// auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
+					semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					temp.value = semantics::exp_value.back();
 				}
 				else if ("real" == semantics::exp_type.back())
@@ -746,9 +745,9 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					{
 						temp.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
 					}
-					double real = atof(semantics::exp_value.back().c_str());
-					auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
-					semantics::builder->CreateStore(value, temp.all);
+					// double real = atof(semantics::exp_value.back().c_str());
+					// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+					semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					temp.value = semantics::exp_value.back();
 				}
 				else if ("boolean" == semantics::exp_type.back())
@@ -776,7 +775,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					semantics::builder->CreateStore(value, temp.all);
 					temp.value = semantics::exp_value.back();
 				}
-
+				semantics::llvm_value.pop_back();
 				semantics::exp_type.pop_back();
 				semantics::exp_value.pop_back();
 				semantics::index.pop_back();
@@ -794,6 +793,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				cout << "Line:" << ctx->variable()->getStart()->getLine() << "    Cannot assign values to variables of different types" << endl;
 				semantics::exp_type.pop_back();
 				semantics::exp_value.pop_back();
+				semantics::llvm_value.pop_back();
 			}
 			else
 			{
@@ -806,16 +806,16 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					/* real型可以兼容integer */
 					if ("integer" == temp.type)
 					{
-						int integer = atoi(semantics::exp_value.back().c_str());
+						// int integer = atoi(semantics::exp_value.back().c_str());
 						// cout<<"int:"<<integer<<endl;
-						auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
-						semantics::builder->CreateStore(value, temp.all);
+						// auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+						semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					}
 					else if ("real" == temp.type)
 					{
-						int integer = atoi(semantics::exp_value.back().c_str());
-						auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), integer);
-						semantics::builder->CreateStore(value, temp.all);
+						// int integer = atoi(semantics::exp_value.back().c_str());
+						// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), integer);
+						semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					}
 					temp.value = semantics::exp_value.back();
 				}
@@ -825,10 +825,10 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					{
 						temp.all = semantics::builder->CreateAlloca(llvm::Type::getInt8Ty(*semantics::context), nullptr);
 					}
-					char ch = atoi(semantics::exp_value.back().c_str());
+					// char ch = atoi(semantics::exp_value.back().c_str());
 					// cout << "ch:" << ch << endl;
-					auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
-					semantics::builder->CreateStore(value, temp.all);
+					// auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
+					semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					temp.value = semantics::exp_value.back();
 				}
 				else if ("real" == semantics::exp_type.back())
@@ -837,9 +837,9 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					{
 						temp.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
 					}
-					double real = atof(semantics::exp_value.back().c_str());
-					auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
-					semantics::builder->CreateStore(value, temp.all);
+					// double real = atof(semantics::exp_value.back().c_str());
+					// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+					semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					temp.value = semantics::exp_value.back();
 				}
 				else if ("boolean" == semantics::exp_type.back())
@@ -870,6 +870,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 
 				semantics::exp_type.pop_back();
 				semantics::exp_value.pop_back();
+				semantics::llvm_value.pop_back();
 				semantics::index.pop_back();
 			}
 		}
@@ -905,15 +906,15 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					}
 					if ("integer" == temp2.type)
 					{
-						int integer = atoi(semantics::exp_value.back().c_str());
-						auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
-						semantics::builder->CreateStore(value, temp2.all);
+						// int integer = atoi(semantics::exp_value.back().c_str());
+						// auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+						semantics::builder->CreateStore(semantics::llvm_value.back(), temp2.all);
 					}
 					else if ("real" == temp2.type)
 					{
-						int integer = atoi(semantics::exp_value.back().c_str());
-						auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), integer);
-						semantics::builder->CreateStore(value, temp2.all);
+						// int integer = atoi(semantics::exp_value.back().c_str());
+						// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), integer);
+						semantics::builder->CreateStore(semantics::llvm_value.back(), temp2.all);
 					}
 
 					/* int integer = atoi(semantics::exp_value.back().c_str());
@@ -922,6 +923,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					temp2.value = semantics::exp_value.back();
 					semantics::exp_type.pop_back();
 					semantics::exp_value.pop_back();
+					semantics::llvm_value.pop_back();
 				}
 				else if ("char" == semantics::exp_type.back())
 				{
@@ -929,13 +931,14 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					{
 						temp2.all = semantics::builder->CreateAlloca(llvm::Type::getInt8Ty(*semantics::context), nullptr);
 					}
-					char ch = atoi(semantics::exp_value.back().c_str());
+					// char ch = atoi(semantics::exp_value.back().c_str());
 					// cout << "ch:" << ch << endl;
-					auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
-					semantics::builder->CreateStore(value, temp2.all);
+					// auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
+					semantics::builder->CreateStore(semantics::llvm_value.back(), temp2.all);
 					temp2.value = semantics::exp_value.back();
 					semantics::exp_type.pop_back();
 					semantics::exp_value.pop_back();
+					semantics::llvm_value.pop_back();
 				}
 				else if ("real" == semantics::exp_type.back())
 				{
@@ -943,12 +946,13 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					{
 						temp2.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
 					}
-					double real = atof(semantics::exp_value.back().c_str());
-					auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
-					semantics::builder->CreateStore(value, temp2.all);
+					// double real = atof(semantics::exp_value.back().c_str());
+					// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+					semantics::builder->CreateStore(semantics::llvm_value.back(), temp2.all);
 					temp2.value = semantics::exp_value.back();
 					semantics::exp_type.pop_back();
 					semantics::exp_value.pop_back();
+					semantics::llvm_value.pop_back();
 				}
 				else if ("boolean" == semantics::exp_type.back())
 				{
@@ -976,6 +980,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					temp2.value = semantics::exp_value.back();
 					semantics::exp_type.pop_back();
 					semantics::exp_value.pop_back();
+					semantics::llvm_value.pop_back();
 				}
 			}
 
@@ -1085,14 +1090,14 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					if ("integer" == temp.type)
 					{
 
-						int integer = atoi(semantics::exp_value.back().c_str());
+						// int integer = atoi(semantics::exp_value.back().c_str());
 						// cout<<"int:"<<integer<<endl;
-						auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+						// auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
 						auto index0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
 						auto index_end = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
 
 						auto addr0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index0, index_end});
-						semantics::builder->CreateStore(value, addr0);
+						semantics::builder->CreateStore(semantics::llvm_value.back(), addr0);
 					}
 					else if ("real" == temp.type)
 					{
@@ -1274,15 +1279,19 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 	string addop = ctx->addop()->getText();
 
 	string right = semantics::exp_value.back();
+	llvm::Value* right_llvm = semantics::llvm_value.back();
 	string right_type = semantics::exp_type.back();
 
 	semantics::exp_value.pop_back();
+	semantics::llvm_value.pop_back();
 	semantics::exp_type.pop_back();
 
 	string left = semantics::exp_value.back();
+	llvm::Value* left_llvm = semantics::llvm_value.back();
 	string left_type = semantics::exp_type.back();
 
 	semantics::exp_value.pop_back();
+	semantics::llvm_value.pop_back();
 	semantics::exp_type.pop_back();
 
 	semantics::index.pop_back();
@@ -1303,29 +1312,31 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 		if ("real" == right_type || "real" == left_type)
 		{
 			semantics::exp_type.push_back("real");
-			auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
-			auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
+			// auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
+			// auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
 
-			auto v = semantics::builder->CreateFAdd(value1, value2);
+			auto v = semantics::builder->CreateFAdd(left_llvm, right_llvm);
 			double r = atof(left.c_str()) + atof(right.c_str());
 			/* ostringstream os;
 			os << r; */
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
+			semantics::llvm_value.push_back(v);
 		}
 		else if ("integer" == right_type && "integer" == left_type)
 		{
 			semantics::exp_type.push_back("integer");
-			auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(left.c_str()));
-			auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
+			// auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(left.c_str()));
+			// auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
 
-			semantics::builder->CreateAdd(value1, value2);
+			auto v = semantics::builder->CreateAdd(left_llvm, right_llvm);
 			int r = atoi(right.c_str()) + atoi(left.c_str());
 			/* ostringstream os;
 			os << r;
 			string result(os.str()); */
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
+			semantics::llvm_value.push_back(v);
 		}
 	}
 	else if ("-" == addop)
@@ -1343,29 +1354,31 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 		if ("real" == right_type || "real" == left_type)
 		{
 			semantics::exp_type.push_back("real");
-			auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
-			auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
+			// auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
+			// auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
 
-			auto v = semantics::builder->CreateFSub(value1, value2);
+			auto v = semantics::builder->CreateFSub(left_llvm, right_llvm);
 			double r = atof(left.c_str()) - atof(right.c_str());
 			/* ostringstream os;
 			os << r; */
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
+			semantics::llvm_value.push_back(v);
 		}
 		else if ("integer" == right_type && "integer" == left_type)
 		{
 			semantics::exp_type.push_back("integer");
-			auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(left.c_str()));
-			auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
+			// auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(left.c_str()));
+			// auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
 
-			semantics::builder->CreateSub(value1, value2);
+			auto v = semantics::builder->CreateSub(left_llvm, right_llvm);
 			int r = atoi(left.c_str()) - atoi(right.c_str());
 			/* ostringstream os;
 			os << r;
 			string result(os.str()); */
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
+			semantics::llvm_value.push_back(v);
 		}
 	}
 }
@@ -1383,15 +1396,19 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 	string mulop = ctx->mulop()->getText();
 
 	string right = semantics::exp_value.back();
+	llvm::Value* right_llvm = semantics::llvm_value.back();
 	string right_type = semantics::exp_type.back();
 
 	semantics::exp_value.pop_back();
+	semantics::llvm_value.pop_back();
 	semantics::exp_type.pop_back();
 
 	string left = semantics::exp_value.back();
+	llvm::Value* left_llvm = semantics::llvm_value.back();
 	string left_type = semantics::exp_type.back();
 
 	semantics::exp_value.pop_back();
+	semantics::llvm_value.pop_back();
 	semantics::exp_type.pop_back();
 
 	semantics::index.pop_back();
@@ -1412,29 +1429,31 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 		if ("real" == right_type || "real" == left_type)
 		{
 			semantics::exp_type.push_back("real");
-			auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
-			auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
+			// auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
+			// auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
 
-			semantics::builder->CreateFMul(value1, value2);
+			auto v = semantics::builder->CreateFMul(left_llvm, right_llvm);
 			double r = atof(left.c_str()) * atof(right.c_str());
 			/* ostringstream os;
 			os << r; */
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
+			semantics::llvm_value.push_back(v);
 		}
 		else if ("integer" == right_type && "integer" == left_type)
 		{
 			semantics::exp_type.push_back("integer");
-			auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(left.c_str()));
-			auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
+			// auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(left.c_str()));
+			// auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
 
-			semantics::builder->CreateMul(value1, value2);
+			auto v = semantics::builder->CreateMul(left_llvm, right_llvm);
 			int r = atoi(right.c_str()) * atoi(left.c_str());
 			/* ostringstream os;
 			os << r;
 			string result(os.str()); */
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
+			semantics::llvm_value.push_back(v);
 		}
 	}
 	else if ("/" == mulop)
@@ -1452,26 +1471,26 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 		}
 		if ("integer" == left_type && "integer" == right_type)
 		{
-
 			semantics::exp_type.push_back("integer");
-			auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(left.c_str()));
-			auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
+			// auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(left.c_str()));
+			// auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
 
-			semantics::builder->CreateSDiv(value1, value2);
+			auto v = semantics::builder->CreateSDiv(left_llvm, right_llvm);
 			int r = atoi(left.c_str()) / atoi(right.c_str());
 			/* ostringstream os;
 			os << r;
 			string result(os.str()); */
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
+			semantics::llvm_value.push_back(v);
 		}
 		else if ("real" == right_type || "real" == left_type)
 		{
 			semantics::exp_type.push_back("real");
-			auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
-			auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
+			// auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
+			// auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
 
-			semantics::builder->CreateFDiv(value1, value2);
+			auto v = semantics::builder->CreateFDiv(left_llvm, right_llvm);
 			// semantics::builder->CreateMod(value1, value2);
 			double r = atof(left.c_str()) / atof(right.c_str());
 			r = r / 1.0;
@@ -1480,6 +1499,7 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 			string result(os.str()); */
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
+			semantics::llvm_value.push_back(v);
 		}
 	}
 	else if ("mod" == mulop)
@@ -1498,16 +1518,17 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 		{
 
 			semantics::exp_type.push_back("integer");
-			auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(left.c_str()));
-			auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
+			// auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(left.c_str()));
+			// auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
 
-			semantics::builder->CreateSRem(value1, value2);
+			auto v = semantics::builder->CreateSRem(left_llvm, right_llvm);
 			int r = atoi(left.c_str()) % atoi(right.c_str());
 			/* ostringstream os;
 			os << r;
 			string result(os.str()); */
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
+			semantics::llvm_value.push_back(v);
 		}
 	}
 }
@@ -1523,6 +1544,17 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 		semantics::exp_value.push_back(id);
 		semantics::exp_type.push_back("boolean");
 		// cout << "boolennn\n";
+		if ("true" == id)
+		{
+			// 如果以true为标识符，可以获取int值1
+			auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);
+			semantics::llvm_value.push_back(value);
+		}
+		else
+		{
+			auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
+			semantics::llvm_value.push_back(value);
+		}
 	}
 	/* 变量或者函数 */
 	else
@@ -1555,6 +1587,7 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 			}
 			else
 			{
+				// semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), temp2.all));
 				semantics::exp_type.push_back(temp2.type);
 				semantics::exp_value.push_back(temp2.value);
 			}
@@ -1573,6 +1606,7 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 			semanticsListener listener;
 			antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, temp.ctx);
 			semantics::stack_st.pop_table();
+			// semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), temp.all));
 			semantics::exp_type.push_back(temp.type);
 			semantics::exp_value.push_back(temp.value);
 		}
@@ -1590,6 +1624,18 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 				// cout << "value:" << temp.value << endl;
 				semantics::exp_type.push_back(temp.type);
 				semantics::exp_value.push_back(temp.value);
+				if ("integer" == temp.type || "boolean" == temp.type)
+				{
+					semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), temp.all));
+				}
+				else if ("real" == temp.type)
+				{
+					semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getFloatTy(*semantics::context), temp.all));
+				}
+				else if ("char" == temp.type)
+				{
+					semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context), temp.all));
+				}
 			}
 		}
 		else
@@ -1611,10 +1657,14 @@ void semanticsListener::exitUnsignConstNumber(PascalSParser::UnsignConstNumberCo
 	{
 		// cout << "real\n";
 		semantics::exp_type.push_back("real");
+		float value = atof(number.c_str());
+		semantics::llvm_value.push_back(llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), value));
 	}
 	else
 	{
 		semantics::exp_type.push_back("integer");
+		int value = atoi(number.c_str());
+		semantics::llvm_value.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), value));
 	}
 }
 
@@ -1624,6 +1674,7 @@ void semanticsListener::exitUnsignConstChar(PascalSParser::UnsignConstCharContex
 		return;
 	semantics::exp_value.push_back(ctx->CONST_CHAR()->getText());
 	semantics::exp_type.push_back("char");
+	semantics::llvm_value.push_back(llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ctx->CONST_CHAR()->getText()[1]));
 }
 
 /* 'not'运算 */
@@ -1665,6 +1716,8 @@ void semanticsListener::exitReverseFactor(PascalSParser::ReverseFactorContext *c
 		// semantics::exp_type.pop_back();
 		semantics::exp_value.pop_back();
 		semantics::exp_value.push_back(result);
+		semantics::llvm_value.pop_back();
+		semantics::llvm_value.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), var));
 	}
 }
 void semanticsListener::enterFactorVariable(PascalSParser::FactorVariableContext *ctx)
@@ -1938,6 +1991,7 @@ void semanticsListener::exitNegativeTerm(PascalSParser::NegativeTermContext *ctx
 		return;
 	string t = semantics::exp_type.back();
 	string v = semantics::exp_value.back();
+	llvm::Value* llvm_v = semantics::llvm_value.back();
 	if ("char" == t || "boolean" == t)
 	{
 		cout << "line:" << ctx->getStart()->getLine() << "    wrong type of negation" << endl;
@@ -1950,6 +2004,10 @@ void semanticsListener::exitNegativeTerm(PascalSParser::NegativeTermContext *ctx
 		string r = to_string(integer);
 		semantics::exp_value.pop_back();
 		semantics::exp_value.push_back(r);
+		auto llvm_zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
+		auto value = semantics::builder->CreateSub(llvm_zero, llvm_v);
+		semantics::llvm_value.pop_back();
+		semantics::llvm_value.push_back(value);
 	}
 	else if ("real" == t)
 	{
@@ -1958,6 +2016,10 @@ void semanticsListener::exitNegativeTerm(PascalSParser::NegativeTermContext *ctx
 		string r = to_string(real);
 		semantics::exp_value.pop_back();
 		semantics::exp_value.push_back(r);
+		auto llvm_zero = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), 0.0);
+		auto value = semantics::builder->CreateSub(llvm_zero, llvm_v);
+		semantics::llvm_value.pop_back();
+		semantics::llvm_value.push_back(value);
 	}
 	else
 	{
@@ -2201,6 +2263,7 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 	semanticsListener listener;
 	antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, temp.ctx);
 	semantics::exp_type.push_back(temp.type);
+	semantics::llvm_value.push_back(temp.all);
 	semantics::exp_value.push_back(temp.value);
 	// temp.value="";
 	semantics::stack_st.pop_table();
