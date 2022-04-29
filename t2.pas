@@ -15,7 +15,7 @@ c:array[1..3,2..4]of integer;
             p1:=7;
         end;
     begin
-        a:=5;
+        
         v:=a;
         p:=2;
         h:=p1(a);
@@ -26,4 +26,5 @@ d:=7;
 d:=6;
 d:=9;
 d:=p(b)*2;
+p(b);
 end.

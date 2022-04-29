@@ -154,6 +154,7 @@ public:
             if (s_table[j].name == name)
             {
                 return j;
+
             }
         }
         return 0;

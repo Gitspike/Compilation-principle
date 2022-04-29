@@ -193,11 +193,11 @@ public:
    void enterUpdown(PascalSParser::UpdownContext * ctx) override{};
    void exitUpdown(PascalSParser::UpdownContext * ctx) override{};
 
-   void enterCallWithNoPara(PascalSParser::CallWithNoParaContext * ctx) override;
-   void exitCallWithNoPara(PascalSParser::CallWithNoParaContext * ctx) override{};
+   void enterCallWithNoPara(PascalSParser::CallWithNoParaContext * ctx) override{};
+   void exitCallWithNoPara(PascalSParser::CallWithNoParaContext * ctx) override;
 
    void enterCallWithPara(PascalSParser::CallWithParaContext * ctx) override;
-   void exitCallWithPara(PascalSParser::CallWithParaContext * ctx) override{};
+   void exitCallWithPara(PascalSParser::CallWithParaContext * ctx) override;
 
    void enterCallWriteln(PascalSParser::CallWritelnContext * ctx) override{};
    void exitCallWriteln(PascalSParser::CallWritelnContext * ctx) override{};
@@ -244,14 +244,14 @@ public:
    void enterReverseFactor(PascalSParser::ReverseFactorContext * ctx) override{};
    void exitReverseFactor(PascalSParser::ReverseFactorContext * ctx) override;
 
-   void enterUnsignConstId(PascalSParser::UnsignConstIdContext * ctx) override;
-   void exitUnsignConstId(PascalSParser::UnsignConstIdContext * ctx) override{};
+   void enterUnsignConstId(PascalSParser::UnsignConstIdContext * ctx) override{};
+   void exitUnsignConstId(PascalSParser::UnsignConstIdContext * ctx) override;
 
-   void enterUnsignConstNumber(PascalSParser::UnsignConstNumberContext * ctx) override;
-   void exitUnsignConstNumber(PascalSParser::UnsignConstNumberContext * ctx) override{};
+   void enterUnsignConstNumber(PascalSParser::UnsignConstNumberContext * ctx) override{};
+   void exitUnsignConstNumber(PascalSParser::UnsignConstNumberContext * ctx) override;
 
-   void enterUnsignConstChar(PascalSParser::UnsignConstCharContext * ctx) override;
-   void exitUnsignConstChar(PascalSParser::UnsignConstCharContext * ctx) override{};
+   void enterUnsignConstChar(PascalSParser::UnsignConstCharContext * ctx) override{};
+   void exitUnsignConstChar(PascalSParser::UnsignConstCharContext * ctx) override;
 
 
    void enterEveryRule(antlr4::ParserRuleContext * ctx) override{};
