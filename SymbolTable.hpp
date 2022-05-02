@@ -82,7 +82,7 @@ typedef struct Table
     bool is_array = false;
     bool is_arg = false; //判断从gettable方法返回的是符号还是参数
 
-    map<string, record_elements> records; //保存记录型变量的内容
+    map<string, struct record_elements> records; //保存记录型变量的内容
     int arguments_num = 0;
     string return_value = "";
     llvm::FunctionType *functiontype = NULL;

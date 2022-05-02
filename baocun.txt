@@ -187,3 +187,38 @@ bool semanticsListener::Assign(table &temp)
 		temp.block = llvm::BasicBlock::Create(*semantics::context, "", temp.function); // sum函数的基本块
 		std::unique_ptr<llvm::IRBuilder<>> builder = std::make_unique<llvm::IRBuilder<>>(temp.block);
 	} */
+
+
+/* if ("integer" == temp.type || "boolean" == temp.type)
+		{
+			auto index_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
+			auto index_1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
+			auto addr_11 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, index_1});
+			auto value = semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), addr_11);
+			semantics::llvm_value.push_back(value);
+		}
+		else if ("real" == temp.type)
+		{
+			auto index_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
+			auto index_1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
+			auto addr_11 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, index_1});
+			auto value = semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), addr_11);
+			semantics::llvm_value.push_back(value);
+		} */
+
+
+		/* int b;
+					string boolean = semantics::exp_value.back();
+					if ("true" == boolean)
+					{
+						b = 1;
+					}
+					else if ("false" == boolean)
+					{
+						b = 0;
+					}
+					if ("true" != boolean && "false" != boolean)
+					{
+						cout << "Line:" << ctx->variable()->getStart()->getLine() << "    Cannot assign values to variables of different types" << endl;
+						return;
+					} */

@@ -167,7 +167,7 @@ public:
    void exitId_varparts(PascalSParser::Id_varpartsContext * ctx) override;
 
    void enterArrayAccess(PascalSParser::ArrayAccessContext * ctx) override;
-   void exitArrayAccess(PascalSParser::ArrayAccessContext * ctx) override{};
+   void exitArrayAccess(PascalSParser::ArrayAccessContext * ctx) override;
 
    void enterRecordAccess(PascalSParser::RecordAccessContext * ctx) override;
    void exitRecordAccess(PascalSParser::RecordAccessContext * ctx) override{};
