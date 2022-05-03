@@ -251,7 +251,7 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 			id.erase(0, id.find_first_not_of(" ")); // 去除前空格
 			id.erase(id.find_last_not_of(" ") + 1); // 去除后空格
 
-			table symbol = semantics::stack_st.get_top_table();
+			table &symbol = semantics::stack_st.get_top_table();
 			assert(true == symbol.is_record); // 从栈顶取出来的符号必然是一个record型变量
 
 			struct record_elements element;
@@ -754,19 +754,18 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				}
 				else if ("boolean" == semantics::exp_type.back())
 				{
-					cout<<"BOOL: "<<semantics::exp_value.back()<<endl;	
+					cout << "BOOL: " << semantics::exp_value.back() << endl;
 					if (NULL == temp.all)
 					{
 						temp.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
 					}
-					//auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), b);
+					// auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), b);
 					semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					temp.value = semantics::exp_value.back();
 				}
 				semantics::llvm_value.pop_back();
 				semantics::exp_type.pop_back();
 				semantics::exp_value.pop_back();
-				
 			}
 		}
 		/* 函数返回值的赋值 */
@@ -832,12 +831,12 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				}
 				else if ("boolean" == semantics::exp_type.back())
 				{
-					
+
 					if (NULL == temp.all)
 					{
 						temp.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
 					}
-					//auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), b);
+					// auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), b);
 					semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					temp.value = semantics::exp_value.back();
 				}
@@ -845,7 +844,6 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				semantics::exp_type.pop_back();
 				semantics::exp_value.pop_back();
 				semantics::llvm_value.pop_back();
-				
 			}
 		}
 		/* 函数参数的赋值,指引用，因为传值的参数会建立新的符号表，当作变量赋值即可 */
@@ -934,7 +932,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					{
 						temp2.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
 					}
-					//auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), b);
+					// auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), b);
 					semantics::builder->CreateStore(semantics::llvm_value.back(), temp2.all);
 					temp2.value = semantics::exp_value.back();
 					semantics::exp_type.pop_back();
@@ -942,8 +940,8 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					semantics::llvm_value.pop_back();
 				}
 			}
-			semantics::cur_range=0;
-			
+			semantics::cur_range = 0;
+
 			return;
 		}
 
@@ -1071,9 +1069,9 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				}
 				else if ("char" == semantics::exp_type.back())
 				{
-					//char ch = atoi(semantics::exp_value.back().c_str());
-					// cout << "ch:" << ch << endl;
-					//auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
+					// char ch = atoi(semantics::exp_value.back().c_str());
+					//  cout << "ch:" << ch << endl;
+					// auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
 					auto index0 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), 0);
 					auto index_end = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), len);
 					auto addr0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index0, index_end});
@@ -1083,7 +1081,6 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				else if ("real" == semantics::exp_type.back())
 				{
 
-					
 					auto index0 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), 0);
 					auto index_end = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), len);
 					auto addr0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getFloatTy(*semantics::context), temp.arr_len), temp.all_item.back(), {index0, index_end});
@@ -1092,9 +1089,9 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				}
 				else if ("boolean" == semantics::exp_type.back())
 				{
-					
+
 					// cout<<"int:"<<integer<<endl;
-					//auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), b);
+					// auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), b);
 					auto index0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
 					auto index_end = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
 					auto addr0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index0, index_end});
@@ -1105,7 +1102,6 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				semantics::exp_type.pop_back();
 				semantics::exp_value.pop_back();
 				semantics::llvm_value.pop_back();
-				
 			}
 		}
 		else if (temp.is_record)
@@ -1120,6 +1116,8 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					cout << "Line:" << ctx->variable()->getStart()->getLine() << "    Cannot assign values to variables of different types" << endl;
 					semantics::exp_type.pop_back();
 					semantics::exp_type.pop_back();
+					semantics::llvm_value.pop_back();
+					return;
 				}
 				else
 				{
@@ -1132,16 +1130,16 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 						/* real型可以兼容integer */
 						if ("integer" == r_ele.type)
 						{
-							int integer = atoi(semantics::exp_value.back().c_str());
+							//int integer = atoi(semantics::exp_value.back().c_str());
 							// cout<<"int:"<<integer<<endl;
-							auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
-							semantics::builder->CreateStore(value, r_ele.all);
+							//auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+							semantics::builder->CreateStore(semantics::llvm_value.back(), r_ele.all);
 						}
 						else if ("real" == r_ele.type)
 						{
-							int integer = atoi(semantics::exp_value.back().c_str());
-							auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), integer);
-							semantics::builder->CreateStore(value, r_ele.all);
+							//int integer = atoi(semantics::exp_value.back().c_str());
+							//auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), integer);
+							semantics::builder->CreateStore(semantics::llvm_value.back(), r_ele.all);
 						}
 						r_ele.value = semantics::exp_value.back();
 					}
@@ -1151,10 +1149,10 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 						{
 							r_ele.all = semantics::builder->CreateAlloca(llvm::Type::getInt8Ty(*semantics::context), nullptr);
 						}
-						char ch = atoi(semantics::exp_value.back().c_str());
+						//char ch = atoi(semantics::exp_value.back().c_str());
 						// cout << "ch:" << ch << endl;
-						auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
-						semantics::builder->CreateStore(value, r_ele.all);
+						//auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
+						semantics::builder->CreateStore(semantics::llvm_value.back(), r_ele.all);
 						r_ele.value = semantics::exp_value.back();
 					}
 					else if ("real" == semantics::exp_type.back())
@@ -1165,38 +1163,24 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 						}
 						double real = atof(semantics::exp_value.back().c_str());
 						auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
-						semantics::builder->CreateStore(value, r_ele.all);
+						semantics::builder->CreateStore(semantics::llvm_value.back(), r_ele.all);
 						r_ele.value = semantics::exp_value.back();
 					}
 					else if ("boolean" == semantics::exp_type.back())
 					{
-						int b;
-						string boolean = semantics::exp_value.back();
-						if ("true" == boolean)
-						{
-							b = 1;
-						}
-						else if ("false" == boolean)
-						{
-							b = 0;
-						}
-						if ("true" != boolean && "false" != boolean)
-						{
-							cout << "Line:" << ctx->variable()->getStart()->getLine() << "   10. Cannot assign values to variables of different types" << endl;
-							return;
-						}
+						
 						if (NULL == r_ele.all)
 						{
 							r_ele.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
 						}
-						auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), b);
-						semantics::builder->CreateStore(value, r_ele.all);
+						//auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), b);
+						semantics::builder->CreateStore(semantics::llvm_value.back(), r_ele.all);
 						r_ele.value = semantics::exp_value.back();
 					}
 
 					semantics::exp_type.pop_back();
 					semantics::exp_value.pop_back();
-					
+					semantics::llvm_value.pop_back();
 				}
 			}
 			else if (r_ele.is_array)
@@ -1237,8 +1221,6 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 	semantics::exp_value.pop_back();
 	semantics::llvm_value.pop_back();
 	semantics::exp_type.pop_back();
-
-	
 
 	if ("+" == addop)
 	{
@@ -1354,8 +1336,6 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 	semantics::exp_value.pop_back();
 	semantics::llvm_value.pop_back();
 	semantics::exp_type.pop_back();
-
-	
 
 	if ("*" == mulop)
 	{
@@ -1485,7 +1465,7 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 	string id = ctx->ID()->getText();
 	if ("true" == id || "false" == id)
 	{
-		
+
 		semantics::exp_type.push_back("boolean");
 		// cout << "boolennn\n";
 		if ("true" == id)
@@ -1594,7 +1574,7 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 
 void semanticsListener::exitUnsignConstNumber(PascalSParser::UnsignConstNumberContext *ctx)
 {
-	if (semantics::depth != 0)
+	if (semantics::depth != 0||1==semantics::iscall)
 		return;
 	if (semantics::is_array_access)
 		return;
@@ -1617,7 +1597,7 @@ void semanticsListener::exitUnsignConstNumber(PascalSParser::UnsignConstNumberCo
 
 void semanticsListener::exitUnsignConstChar(PascalSParser::UnsignConstCharContext *ctx)
 {
-	if (semantics::depth != 0)
+	if (semantics::depth != 0||1==semantics::iscall)
 		return;
 	if (semantics::is_array_access)
 		return;
@@ -1735,15 +1715,15 @@ void semanticsListener::enterArrayAccess(PascalSParser::ArrayAccessContext *ctx)
 	// cout<<semantics::r_type.size()<<endl;
 	if ("id" == type_of(ran.c_str()) || type_of(ran.c_str()) != semantics::r_type[semantics::cur_range - 1])
 	{
-		 cout<<"r_type:"<<semantics::cur_range<<endl;
-		cout << "line: " << ctx->getStart()->getLine() << " 1.0  Illegal access to array" << endl;
+		
+		cout << "line: " << ctx->getStart()->getLine() << "   Illegal access to array" << endl;
 		return;
 	}
 	if ("integer" == type_of(ran.c_str()))
 	{
 		if (r.first > atoi(ran.c_str()) || r.second < (atoi(ran.c_str()) - r.first) || "integer" != semantics::r_type[semantics::cur_range - 1])
 		{
-			cout << "line: " << ctx->getStart()->getLine() << " 2.0  Illegal access to array" << endl;
+			cout << "line: " << ctx->getStart()->getLine() << "   Illegal access to array" << endl;
 			return;
 		}
 		else
@@ -1777,7 +1757,7 @@ void semanticsListener::enterId_varparts(PascalSParser::Id_varpartsContext *ctx)
 	if (semantics::depth != 0)
 		return;
 	table &temp = semantics::stack_st.locate_table(semantics::id);
-	if (!temp.is_array)
+	if (!temp.is_array || 1 == semantics::iscall)
 		return;
 	semantics::id_varparts_num++;
 	// cout << "now: " << semantics::id_varparts_num << endl;
@@ -1785,7 +1765,7 @@ void semanticsListener::enterId_varparts(PascalSParser::Id_varpartsContext *ctx)
 /* 处理完一个数组，初始化数据 */
 void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 {
-	if (semantics::depth != 0)
+	if (semantics::depth != 0 || 1 == semantics::iscall)
 		return;
 	table &temp = semantics::stack_st.locate_table(semantics::id);
 	/* if (temp.name == ctx->parent->children[0]->getText())
@@ -1891,7 +1871,7 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 
 		semantics::exp_type.push_back(temp.type);
 		semantics::exp_value.push_back(temp.arr_val[len]);
-		
+
 		auto index_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
 		auto index_1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
 		auto addr_11 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, index_1});
@@ -1903,13 +1883,11 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 }
 void semanticsListener::enterRecordAccess(PascalSParser::RecordAccessContext *ctx)
 {
-	if (semantics::depth != 0)
+	if (semantics::depth != 0||1==semantics::iscall)
 		return;
 	if (semantics::is_assign == 1)
 	{
 		table &temp = semantics::stack_st.locate_table(semantics::id);
-		cout<<"ID: "<<ctx->ID()->getText()<<"    "<<temp.name<<endl;
-		cout<<"RECORD: "<<temp.name<<"   "<<temp.records.size()<<endl;
 		if (temp.records.find(ctx->ID()->getText()) == temp.records.end())
 		{
 			cout << "line: " << ctx->getStart()->getLine() << "   record doesn't has this member: " << ctx->ID()->getText() << endl;
@@ -2061,7 +2039,194 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 
 		struct Argument a = temp.arguments[i];
 		string a_name = args[i];
-		if ("integer" == type_of(a_name))
+		if (a_name.find('.') != string::npos)
+		{
+			/* 传的是结构体元素 */
+			int i = a_name.find('.');
+			string record_id = a_name.substr(0, i);
+			string ele_id = a_name.substr(i + 1, a_name.size());
+			table &temp = semantics::stack_st.locate_table(record_id);
+			if ("err" == temp.type)
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    no declaration of record:" << temp.name << endl;
+				return;
+			}
+			if (temp.records.find(ele_id) == temp.records.end())
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    records doesn't has this element" << endl;
+				return;
+			}
+			struct record_elements re = temp.records[ele_id];
+			if (a.pass_value)
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    struct elements cannot be passed by reference" << endl;
+				return;
+			}
+			if (a.type != re.type && !("real" == a.type && "integer" == re.type))
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    wrong type of parameter" << endl;
+				return;
+			}
+			table t(a.name, a.type, re.value);
+			if ("real" == a.type)
+			{
+				double real = atof(re.value.c_str());
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+				semantics::builder->CreateStore(value1, t.all);
+				semantics::stack_st.insert_table(t);
+			}
+			else if ("integer" == a.type || "boolean" == a.type)
+			{
+				int integer = atoi(re.value.c_str());
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+				semantics::builder->CreateStore(value1, t.all);
+				semantics::stack_st.insert_table(t);
+			}
+			else if ("char" == a.type)
+			{
+				char ch = re.value[0];
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getInt8Ty(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
+				semantics::builder->CreateStore(value1, t.all);
+				semantics::stack_st.insert_table(t);
+			}
+			else
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    program error at callwithpara" << endl;
+				return;
+			}
+		}
+		else if (a_name.find('[') != string::npos || a_name.find(']') != string::npos)
+		{
+			/* 传递数组元素 */
+			int i = a_name.find("[");
+			string array_id = a_name.substr(0, i);
+			string list = a_name.substr(i, a_name.size());
+			table &temp = semantics::stack_st.locate_table(array_id);
+			if ("err" == temp.type)
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    no decalration of variable:" << array_id << endl;
+				return;
+			}
+			if (a.pass_value)
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    array elements cannot be passed by reference" << endl;
+				return;
+			}
+			if (!temp.is_array)
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    this variable isn't an array" << endl;
+				return;
+			}
+			vector<int> periods;
+			i = list.find('[');
+			while (string::npos != i)
+			{
+				list = list.replace(i, 1, ",");
+				i = list.find('[');
+			}
+			i = list.find(']');
+			while (string::npos != i)
+			{
+				list = list.replace(i, 1, ",");
+				i = list.find(']');
+			}
+			i = list.find(",,");
+			while (string::npos != i)
+			{
+				list = list.replace(i, 2, ",");
+				i = list.find(",,");
+			}
+			list.erase(0, 1);
+			i = list.find(',');
+			// cout << "here 2" << endl;
+			while (string::npos != i)
+			{
+				string temp_str = list.substr(0, i);
+				if ("integer" == type_of(temp_str))
+				{
+					int r = atoi(temp_str.c_str());
+					periods.push_back(r);
+				}
+				else if ("char" == type_of(temp_str))
+				{
+					char ch = temp_str[0];
+					periods.push_back(ch);
+				}
+				else
+				{
+					cout << "Wrong type of period" << endl;
+				}
+				list = list.substr(i + 1, list.size());
+				i = list.find(',');
+			}
+			int len;
+			/* 数组只有一维 */
+			if (1 == periods.size())
+			{
+				len = periods[0] - temp.range[0].first;
+			}
+			else
+			{
+				/* 多维数组 */
+				int dep = periods.size() - 1;
+				int end = periods[dep - 1];
+				len = periods[dep] - temp.range[dep].first + 1;
+				len += (end - temp.range[dep - 1].first) * temp.range[dep].second;
+			}
+			int wid = 1;
+			int location = periods.size() - 3;
+			while (location >= 0)
+			{
+				for (int i = periods.size() - 1; i > location; i--)
+				{
+					wid *= temp.range[1].second;
+				}
+				len += wid;
+				wid = 1;
+				location--;
+			}
+
+			if ("" == temp.arr_val[len])
+			{
+				cout << "line: " << ctx->getStart()->getLine() << "    The elements has no value" << endl;
+				return;
+			}
+			table t(a.name,a.type,temp.arr_val[len]);
+			if ("real" == a.type)
+			{
+				double real = atof(temp.arr_val[len].c_str());
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+				semantics::builder->CreateStore(value1, t.all);
+				semantics::stack_st.insert_table(t);
+			}
+			else if ("integer" == a.type || "boolean" == a.type)
+			{
+				int integer = atoi(temp.arr_val[len].c_str());
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+				semantics::builder->CreateStore(value1, t.all);
+				semantics::stack_st.insert_table(t);
+			}
+			else if ("char" == a.type)
+			{
+				char ch = temp.arr_val[len][0];
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getInt8Ty(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
+				semantics::builder->CreateStore(value1, t.all);
+				semantics::stack_st.insert_table(t);
+			}
+			else
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    program error at callwithpara" << endl;
+				return;
+			}
+
+		}
+		else if ("integer" == type_of(a_name))
 		{
 			if (("integer" != a.type && "real" != a.type) || a.pass_value)
 			{
@@ -2069,6 +2234,11 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 				return;
 			}
 			table t(a.name, a.type, a_name);
+
+			int integer = atoi(a_name.c_str());
+			t.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
+			auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+			semantics::builder->CreateStore(value1, t.all);
 			semantics::stack_st.insert_table(t);
 		}
 		else if ("real" == type_of(a_name))
@@ -2080,7 +2250,19 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 			}
 
 			table t(a.name, a.type, a_name);
-			t.all = NULL;
+			double real = atof(a_name.c_str());
+			t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+			auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+			semantics::builder->CreateStore(value1, t.all);
+			semantics::stack_st.insert_table(t);
+		}
+		else if("char"==type_of(a_name))
+		{
+			table t(a.name, a.type, a_name);
+			char ch =a_name[0];
+			t.all = semantics::builder->CreateAlloca(llvm::Type::getInt8Ty(*semantics::context), nullptr);
+			auto value1 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
+			semantics::builder->CreateStore(value1, t.all);
 			semantics::stack_st.insert_table(t);
 		}
 		else
@@ -2090,12 +2272,44 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 			{
 				/* 传值参数，需要新建符号表 */
 				table &temp2 = semantics::stack_st.locate_table(a_name);
+
 				if ("err" == temp2.type || (temp2.is_arg))
 				{
 					cout << "line:" << ctx->getStart()->getLine() << "   variable not declared: " << a_name << endl;
 					return;
 				}
+				if (temp2.type != a.type)
+				{
+					cout << "line:" << ctx->getStart()->getLine() << "    wrong type of parameter" << endl;
+					return;
+				}
 				table t(a.name, a.type, temp2.value);
+				if ("interger" == a.type || "boolean" == a.type)
+				{
+					int integer = atoi(a_name.c_str());
+					t.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
+					auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+					semantics::builder->CreateStore(value1, t.all);
+				}
+				else if ("real" == a.type)
+				{
+					double real = atof(a_name.c_str());
+					t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+					auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+					semantics::builder->CreateStore(value1, t.all);
+				}
+				else if ("char" == a.type)
+				{
+					char ch = a_name[0];
+					t.all = semantics::builder->CreateAlloca(llvm::Type::getInt8Ty(*semantics::context), nullptr);
+					auto value1 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
+					semantics::builder->CreateStore(value1, t.all);
+				}
+				else
+				{
+					cout << "line:" << ctx->getStart()->getLine() << "    wrong type of parameter" << endl;
+					return;
+				}
 				semantics::stack_st.insert_table(t);
 			}
 			else if (a.pass_value)
@@ -2107,7 +2321,11 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 					cout << "line:" << ctx->getStart()->getLine() << "   variable not declared: " << a_name << endl;
 					return;
 				}
-
+				if (temp2.type != a.type)
+				{
+					cout << "line:" << ctx->getStart()->getLine() << "    wrong type of parameter" << endl;
+					return;
+				}
 				int r = semantics::stack_st.get_location(a_name);
 
 				temp.arguments[i].location = r;
@@ -2136,10 +2354,12 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 	string lists = ctx->expression_list()->getText();
 	vector<string> args;
 	string name = ctx->ID()->getText();
+
 	table &temp = semantics::stack_st.locate_table(name);
-	if (temp.is_arg || "err" == temp.type)
+	if ((temp.is_arg) || "err" == temp.type)
 	{
-		cout << "line:" << ctx->getStart()->getLine() << "    No such function or procedure" << endl;
+		cout << "line:" << ctx->getStart()->getLine() << "    No such function or procedure: " << endl;
+
 		return;
 	}
 	if (0 == temp.arguments_num)
@@ -2165,9 +2385,197 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 	/* 处理参数 */
 	for (i = 0; i < temp.arguments_num; i++)
 	{
+
 		struct Argument a = temp.arguments[i];
 		string a_name = args[i];
-		if ("integer" == type_of(a_name))
+		if (a_name.find('.') != string::npos)
+		{
+			/* 传的是结构体元素 */
+			int i = a_name.find('.');
+			string record_id = a_name.substr(0, i);
+			string ele_id = a_name.substr(i + 1, a_name.size());
+			table &temp = semantics::stack_st.locate_table(record_id);
+			if ("err" == temp.type)
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    no declaration of record:" << temp.name << endl;
+				return;
+			}
+			if (temp.records.find(ele_id) == temp.records.end())
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    records doesn't has this element" << endl;
+				return;
+			}
+			struct record_elements re = temp.records[ele_id];
+			if (a.pass_value)
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    struct elements cannot be passed by reference" << endl;
+				return;
+			}
+			if (a.type != re.type && !("real" == a.type && "integer" == re.type))
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    wrong type of parameter" << endl;
+				return;
+			}
+			table t(a.name, a.type, re.value);
+			if ("real" == a.type)
+			{
+				double real = atof(re.value.c_str());
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+				semantics::builder->CreateStore(value1, t.all);
+				semantics::stack_st.insert_table(t);
+			}
+			else if ("integer" == a.type || "boolean" == a.type)
+			{
+				int integer = atoi(re.value.c_str());
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+				semantics::builder->CreateStore(value1, t.all);
+				semantics::stack_st.insert_table(t);
+			}
+			else if ("char" == a.type)
+			{
+				char ch = re.value[0];
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getInt8Ty(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
+				semantics::builder->CreateStore(value1, t.all);
+				semantics::stack_st.insert_table(t);
+			}
+			else
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    program error at callwithpara" << endl;
+				return;
+			}
+		}
+		else if (a_name.find('[') != string::npos || a_name.find(']') != string::npos)
+		{
+			/* 传递数组元素 */
+			int i = a_name.find("[");
+			string array_id = a_name.substr(0, i);
+			string list = a_name.substr(i, a_name.size());
+			table &temp = semantics::stack_st.locate_table(array_id);
+			if ("err" == temp.type)
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    no decalration of variable:" << array_id << endl;
+				return;
+			}
+			if (a.pass_value)
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    array elements cannot be passed by reference" << endl;
+				return;
+			}
+			if (!temp.is_array)
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    this variable isn't an array" << endl;
+				return;
+			}
+			vector<int> periods;
+			i = list.find('[');
+			while (string::npos != i)
+			{
+				list = list.replace(i, 1, ",");
+				i = list.find('[');
+			}
+			i = list.find(']');
+			while (string::npos != i)
+			{
+				list = list.replace(i, 1, ",");
+				i = list.find(']');
+			}
+			i = list.find(",,");
+			while (string::npos != i)
+			{
+				list = list.replace(i, 2, ",");
+				i = list.find(",,");
+			}
+			list.erase(0, 1);
+			i = list.find(',');
+			// cout << "here 2" << endl;
+			while (string::npos != i)
+			{
+				string temp_str = list.substr(0, i);
+				if ("integer" == type_of(temp_str))
+				{
+					int r = atoi(temp_str.c_str());
+					periods.push_back(r);
+				}
+				else if ("char" == type_of(temp_str))
+				{
+					char ch = temp_str[0];
+					periods.push_back(ch);
+				}
+				else
+				{
+					cout << "Wrong type of period" << endl;
+				}
+				list = list.substr(i + 1, list.size());
+				i = list.find(',');
+			}
+			int len;
+			/* 数组只有一维 */
+			if (1 == periods.size())
+			{
+				len = periods[0] - temp.range[0].first;
+			}
+			else
+			{
+				/* 多维数组 */
+				int dep = periods.size() - 1;
+				int end = periods[dep - 1];
+				len = periods[dep] - temp.range[dep].first + 1;
+				len += (end - temp.range[dep - 1].first) * temp.range[dep].second;
+			}
+			int wid = 1;
+			int location = periods.size() - 3;
+			while (location >= 0)
+			{
+				for (int i = periods.size() - 1; i > location; i--)
+				{
+					wid *= temp.range[1].second;
+				}
+				len += wid;
+				wid = 1;
+				location--;
+			}
+
+			if ("" == temp.arr_val[len])
+			{
+				cout << "line: " << ctx->getStart()->getLine() << "    The elements has no value" << endl;
+				return;
+			}
+			table t(a.name,a.type,temp.arr_val[len]);
+			if ("real" == a.type)
+			{
+				double real = atof(temp.arr_val[len].c_str());
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+				semantics::builder->CreateStore(value1, t.all);
+				semantics::stack_st.insert_table(t);
+			}
+			else if ("integer" == a.type || "boolean" == a.type)
+			{
+				int integer = atoi(temp.arr_val[len].c_str());
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+				semantics::builder->CreateStore(value1, t.all);
+				semantics::stack_st.insert_table(t);
+			}
+			else if ("char" == a.type)
+			{
+				char ch = temp.arr_val[len][0];
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getInt8Ty(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
+				semantics::builder->CreateStore(value1, t.all);
+				semantics::stack_st.insert_table(t);
+			}
+			else
+			{
+				cout << "line:" << ctx->getStart()->getLine() << "    program error at callwithpara" << endl;
+				return;
+			}
+
+		}
+		else if ("integer" == type_of(a_name))
 		{
 			if (("integer" != a.type && "real" != a.type) || a.pass_value)
 			{
@@ -2175,6 +2583,11 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 				return;
 			}
 			table t(a.name, a.type, a_name);
+
+			int integer = atoi(a_name.c_str());
+			t.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
+			auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+			semantics::builder->CreateStore(value1, t.all);
 			semantics::stack_st.insert_table(t);
 		}
 		else if ("real" == type_of(a_name))
@@ -2184,7 +2597,12 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 				cout << "line:" << ctx->getStart()->getLine() << "   wrong type of parameter: " << a_name << endl;
 				return;
 			}
+
 			table t(a.name, a.type, a_name);
+			double real = atof(a_name.c_str());
+			t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+			auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+			semantics::builder->CreateStore(value1, t.all);
 			semantics::stack_st.insert_table(t);
 		}
 		else
@@ -2194,12 +2612,44 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 			{
 				/* 传值参数，需要新建符号表 */
 				table &temp2 = semantics::stack_st.locate_table(a_name);
-				if ("err" == temp2.type || temp2.is_arg)
+
+				if ("err" == temp2.type || (temp2.is_arg))
 				{
 					cout << "line:" << ctx->getStart()->getLine() << "   variable not declared: " << a_name << endl;
 					return;
 				}
+				if (temp2.type != a.type)
+				{
+					cout << "line:" << ctx->getStart()->getLine() << "    wrong type of parameter" << endl;
+					return;
+				}
 				table t(a.name, a.type, temp2.value);
+				if ("interger" == a.type || "boolean" == a.type)
+				{
+					int integer = atoi(a_name.c_str());
+					t.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
+					auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+					semantics::builder->CreateStore(value1, t.all);
+				}
+				else if ("real" == a.type)
+				{
+					double real = atof(a_name.c_str());
+					t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+					auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+					semantics::builder->CreateStore(value1, t.all);
+				}
+				else if ("char" == a.type)
+				{
+					char ch = a_name[0];
+					t.all = semantics::builder->CreateAlloca(llvm::Type::getInt8Ty(*semantics::context), nullptr);
+					auto value1 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
+					semantics::builder->CreateStore(value1, t.all);
+				}
+				else
+				{
+					cout << "line:" << ctx->getStart()->getLine() << "    wrong type of parameter" << endl;
+					return;
+				}
 				semantics::stack_st.insert_table(t);
 			}
 			else if (a.pass_value)
@@ -2211,15 +2661,14 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 					cout << "line:" << ctx->getStart()->getLine() << "   variable not declared: " << a_name << endl;
 					return;
 				}
-				vector<table> temp_symbol = semantics::stack_st.get_symbol_table();
-				for (int j = temp_symbol.size() - 1; j >= 0; j--)
+				if (temp2.type != a.type)
 				{
-					if (temp_symbol[j].name == a_name)
-					{
-						temp.arguments[i].location = j;
-						break;
-					}
+					cout << "line:" << ctx->getStart()->getLine() << "    wrong type of parameter" << endl;
+					return;
 				}
+				int r = semantics::stack_st.get_location(a_name);
+
+				temp.arguments[i].location = r;
 			}
 		}
 	}

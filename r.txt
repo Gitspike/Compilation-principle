@@ -1,13 +1,16 @@
-ID: id    book
-RECORD: book   0
-line: 12   record doesn't has this member: id
-Line:12    Cannot assign values to variables of different types
-name: main  type: err   value: 
-name: book  type: record   value: record
-name: a  type: integer   value: 10
-name: b  type: integer   value: 2
-name: d  type: integer   value: 0
-name: g  type: boolean   value: false
-name: e  type: real   value: 14
-name: f  type: real   value: 93.333331
-name: c  type: integer   value: integer
+name: main  type: main   value: 
+name: p  type:    value: 
+name: main  type: main   value: 
+name: p  type:    value: 
+name: n  type: integer   value: 1
+name: main  type: main   value: 
+name: p  type:    value: 
+; ModuleID = 'main'
+source_filename = "main"
+target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-pc-linux-gnu"
+
+define i32 @main() {
+  %1 = alloca i32
+  store i32 1, i32* %1
+}

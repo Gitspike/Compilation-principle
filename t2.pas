@@ -3,14 +3,14 @@ var
 a,b,d,h:integer;
 g:boolean;
 e,f:real;
-c:array[1..3,2..4]of integer;
+c,a:array[1..3,2..4]of integer;
     function p(n2:integer):integer;
     var v:integer;
         function p1(var n1:integer):integer;
         var m:integer;
         begin
             v:=4;
-            n1:=3;
+           
             n2:=9;
             p1:=7;
         end;
@@ -23,7 +23,7 @@ c:array[1..3,2..4]of integer;
 begin
 a:=3;
 g:=true;
-c[1][3]:=g;
+c[1][3]:=3+a*2;
 a:=32*3+c[1][3];
 b:=1;
 d:=7;

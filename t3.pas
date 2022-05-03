@@ -1,23 +1,21 @@
 program main(input);
-var
+{ var
 book:record
 id:integer
 end;
-a,b,d:integer;
-g:boolean;
-e,f:real;
+a:integer;
 c:array[1..3,2..4]of integer;
+b:char; }
+procedure p(n:integer);
 begin
-b:=2;
-book.id:=9;
-e:=0.15;
-e:=b/e;
-a:=5*9;
-a:=1*7;
-f:=a*e;
-e:=a*b;
-a:=b*2;
-a:=10;
+end;
+
+begin
+{ book.id:=5;
+c[2][3]:=book.id;
+b:='b';
+a:=book.id; }
+p(1);
 end.
 {a:=2;}
 {e:=b/e;} 
