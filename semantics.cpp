@@ -19,6 +19,7 @@ namespace semantics
 	std::unique_ptr<llvm::LLVMContext> context; // llvm需要用的context智能指针
 	std::unique_ptr<llvm::Module> mod;			// 同上
 	std::unique_ptr<llvm::IRBuilder<>> builder;
+	llvm::TargetMachine *theTargetMachine;
 	vector<string> exp_type;
 	vector<string> exp_value;		  // 该值仅是给人和符号表看的，在计算时不要用直接用这里的值
 	vector<llvm::Value *> llvm_value; // llvm_value 保存 llvm 形式的值，当需要值的时候，可以取出来；保存时，可能需要用到 CreateLoad 等 api
@@ -70,8 +71,10 @@ void semanticsListener::enterProgram(PascalSParser::ProgramContext *ctx)
 	auto features = "";
 	llvm::TargetOptions options;
 	auto relocationModel = llvm::Reloc::Model::PIC_;
-	auto theTargetMachine = target->createTargetMachine(targetTriple, cpu, features, options, relocationModel);
-	semantics::mod->setDataLayout(theTargetMachine->createDataLayout());
+	// auto theTargetMachine = target->createTargetMachine(targetTriple, cpu, features, options, relocationModel);
+	semantics::theTargetMachine = target->createTargetMachine(targetTriple, cpu, features, options, relocationModel);
+	// semantics::mod->setDataLayout(theTargetMachine->createDataLayout());
+	semantics::mod->setDataLayout(semantics::theTargetMachine->createDataLayout());
 	// 创建 printf 函数
 	llvm::SmallVector<llvm::Type *, 1> args;
 	args.push_back(llvm::Type::getInt8PtrTy(*semantics::context));
@@ -547,6 +550,18 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 void semanticsListener::exitProgram(PascalSParser::ProgramContext *ctx)
 {
 	semantics::builder->CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0));
+
+	// 输出汇编文件
+    std::error_code errorCode;
+    std::string filename = "main.s";  // 汇编文件名
+    llvm::raw_fd_ostream dest(filename, errorCode, llvm::sys::fs::OF_None);
+    llvm::legacy::PassManager pass;
+    llvm::CodeGenFileType type = llvm::CGFT_AssemblyFile;  // 文件类型为汇编
+    // llvm::CodeGenFileType type = llvm::CGFT_ObjectFile;  // 文件类型为可执行文件
+    semantics::theTargetMachine->addPassesToEmitFile(pass, dest, nullptr, type);
+    pass.run(*semantics::mod);
+    dest.flush();
+
 	semantics::mod->print(llvm::outs(), nullptr); // 打印ir
 }
 
