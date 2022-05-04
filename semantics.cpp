@@ -742,15 +742,11 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					/* real型可以兼容integer */
 					if ("integer" == temp.type)
 					{
-						// int integer = atoi(semantics::exp_value.back().c_str());
-						// cout<<"int:"<<integer<<endl;
-						// auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
+						
 						semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					}
 					else if ("real" == temp.type)
 					{
-						// int integer = atoi(semantics::exp_value.back().c_str());
-						// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), integer);
 						semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					}
 					temp.value = semantics::exp_value.back();
@@ -761,9 +757,6 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					{
 						temp.all = semantics::builder->CreateAlloca(llvm::Type::getInt8Ty(*semantics::context), nullptr);
 					}
-					// char ch = atoi(semantics::exp_value.back().c_str());
-					// cout << "ch:" << ch << endl;
-					// auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
 					semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					temp.value = semantics::exp_value.back();
 				}
@@ -773,8 +766,6 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					{
 						temp.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
 					}
-					// double real = atof(semantics::exp_value.back().c_str());
-					// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
 					semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					temp.value = semantics::exp_value.back();
 				}
@@ -889,7 +880,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 			table &temp2 = semantics::stack_st.get_var_table(loc);
 			if (temp2.type != semantics::exp_type.back() && !("real" == temp2.type && "integer" == semantics::exp_type.back()))
 			{
-				cout << "Line:" << ctx->variable()->getStart()->getLine() << "  3.  Cannot assign values to variables of different types:" << loc << endl;
+				cout << "Line:" << ctx->variable()->getStart()->getLine() << "    Cannot assign values to variables of different types:" << loc << endl;
 				semantics::exp_type.pop_back();
 				semantics::exp_type.pop_back();
 				return;
@@ -1056,7 +1047,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					location--;
 				}
 			}
-			if (temp.type != semantics::exp_type.back() && !("real" == temp.type && "integer" == temp.type))
+			if (temp.type != semantics::exp_type.back() && !("real" == temp.type && "integer" == semantics::exp_type.back()))
 			{
 				cout << "Line:" << ctx->variable()->getStart()->getLine() << "    Cannot assign values to variables of different types" << endl;
 				semantics::exp_type.pop_back();
@@ -1100,7 +1091,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					// auto value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ch);
 					auto index0 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), 0);
 					auto index_end = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), len);
-					auto addr0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index0, index_end});
+					auto addr0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt8Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index0, index_end});
 					semantics::builder->CreateStore(semantics::llvm_value.back(), addr0);
 					temp.arr_val[len] = semantics::exp_value.back();
 				}
@@ -1137,7 +1128,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 			if (!r_ele.is_array)
 			{
 				/* 内容不是数组 */
-				if (r_ele.type != semantics::exp_type.back() && !("real" == r_ele.type && "integer" == r_ele.type))
+				if (r_ele.type != semantics::exp_type.back() && !("real" == r_ele.type && "integer" == semantics::exp_type.back()))
 				{
 					cout << "Line:" << ctx->variable()->getStart()->getLine() << "    Cannot assign values to variables of different types" << endl;
 					semantics::exp_type.pop_back();
@@ -1609,7 +1600,7 @@ void semanticsListener::exitUnsignConstNumber(PascalSParser::UnsignConstNumberCo
 		// cout << "real\n";
 		semantics::exp_type.push_back("real");
 		float value = atof(number.c_str());
-		semantics::llvm_value.push_back(llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), value));
+		semantics::llvm_value.push_back(llvm::ConstantFP::get(llvm::Type::getFloatTy(*semantics::context), value));
 	}
 	else
 	{
