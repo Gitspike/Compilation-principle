@@ -142,7 +142,7 @@ public:
    void enterCall(PascalSParser::CallContext * ctx) override{};
    void exitCall(PascalSParser::CallContext * ctx) override{};
 
-   void enterIf(PascalSParser::IfContext * ctx) override{};
+   void enterIf(PascalSParser::IfContext * ctx) override;
    void exitIf(PascalSParser::IfContext * ctx) override{};
 
    void enterCase(PascalSParser::CaseContext * ctx) override{};
@@ -200,7 +200,7 @@ public:
    void exitCallWithPara(PascalSParser::CallWithParaContext * ctx) override;
 
    void enterCallWriteln(PascalSParser::CallWritelnContext * ctx) override{};
-   void exitCallWriteln(PascalSParser::CallWritelnContext * ctx) override{};
+   void exitCallWriteln(PascalSParser::CallWritelnContext * ctx) override;
 
    void enterCallReadln(PascalSParser::CallReadlnContext * ctx) override{};
    void exitCallReadln(PascalSParser::CallReadlnContext * ctx) override{};
@@ -209,7 +209,7 @@ public:
    void exitExpression_list(PascalSParser::Expression_listContext * ctx) override{};
 
    void enterRelationOperation(PascalSParser::RelationOperationContext * ctx) override{};
-   void exitRelationOperation(PascalSParser::RelationOperationContext * ctx) override{};
+   void exitRelationOperation(PascalSParser::RelationOperationContext * ctx) override;
 
    void enterNoRalationOperation(PascalSParser::NoRalationOperationContext * ctx) override{};
    void exitNoRalationOperation(PascalSParser::NoRalationOperationContext * ctx) override{};
