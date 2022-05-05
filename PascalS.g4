@@ -172,7 +172,7 @@ call_procedure_statement
 	: ID								# CallWithNoPara 
 	| ID '(' expression_list ')'		# CallWithPara
 	| 'writeln' '(' expression_list ')'	# CallWriteln	// 将表达式的结果输出并换行
-	| 'readln' '(' ID ')'				# CallReadln	// 将输入的内容保存在变量中，原版Pascal在这里不会做类型检查
+	| 'readln' '(' variable ')'				# CallReadln	// 将输入的内容保存在变量中，原版Pascal在这里不会做类型检查
 	;
 
 /* 表达式 */

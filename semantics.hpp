@@ -203,7 +203,7 @@ public:
    void exitCallWriteln(PascalSParser::CallWritelnContext * ctx) override;
 
    void enterCallReadln(PascalSParser::CallReadlnContext * ctx) override{};
-   void exitCallReadln(PascalSParser::CallReadlnContext * ctx) override{};
+   void exitCallReadln(PascalSParser::CallReadlnContext * ctx) override;
 
    void enterExpression_list(PascalSParser::Expression_listContext * ctx) override{};
    void exitExpression_list(PascalSParser::Expression_listContext * ctx) override{};
