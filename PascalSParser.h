@@ -1050,7 +1050,7 @@ public:
   public:
     CallReadlnContext(Call_procedure_statementContext *ctx);
 
-    antlr4::tree::TerminalNode *ID();
+    VariableContext *variable();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
   };
