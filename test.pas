@@ -1,8 +1,24 @@
 program main(input);
 var
-c:array [1..3, 1..4, 1..5] of integer;
+	a,b:integer;
+
+procedure exchange(var x:integer; var y:integer);
+	var
+		z:integer;
+	begin
+		z:=x;
+		x:=y;
+		y:=z;
+	end;
+
 begin
-	c[1][2][3]:=1;
-	writeln(c[1][2][3]);
+	a:=1;
+	read(a);
+	b:=2;
+	write(a);
+	write(b);
+	exchange(a,b);
+	write(a);
+	write(b);
 end.
 

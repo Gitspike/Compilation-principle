@@ -80,6 +80,11 @@ void semanticsListener::enterProgram(PascalSParser::ProgramContext *ctx)
 	args.push_back(llvm::Type::getInt8PtrTy(*semantics::context));
 	auto printfType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*semantics::context), args, true);
 	auto printfFunction = llvm::Function::Create(printfType, llvm::Function::ExternalLinkage, "printf", semantics::mod.get());
+	// 创建 scanf 函数
+	llvm::SmallVector<llvm::Type *, 1> args_out;
+	args_out.push_back(llvm::Type::getInt8PtrTy(*semantics::context));
+	auto scanfType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*semantics::context), args_out, true);
+	auto scanfFunction = llvm::Function::Create(scanfType, llvm::Function::ExternalLinkage, "scanf", semantics::mod.get());
 }
 
 void semanticsListener::enterProgram_head(PascalSParser::Program_headContext *ctx)
@@ -553,7 +558,7 @@ void semanticsListener::exitProgram(PascalSParser::ProgramContext *ctx)
 
 	// 输出汇编文件
 	std::error_code errorCode;
-	std::string filename = "main.s"; // 汇编文件名
+	std::string filename = ".tmp.main.s"; // 汇编文件名
 	llvm::raw_fd_ostream dest(filename, errorCode, llvm::sys::fs::OF_None);
 	llvm::legacy::PassManager pass;
 	llvm::CodeGenFileType type = llvm::CGFT_AssemblyFile; // 文件类型为汇编
@@ -1022,12 +1027,15 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 			}
 			int len;
 			llvm::Value *Len;
+			// 不论数组有几维，llvm_value的栈顶一定是右值
 			/* 数组只有一维 */
 			if (1 == periods.size())
 			{
-				Len = semantics::builder->CreateSub(semantics::llvm_value.back(), llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[0].first));
+				// print_value("value is : ", semantics::llvm_value[semantics::llvm_value.size() - 2]);
+				// 一维数组中，llvm_value中从栈顶往下有2个可用值，分别是右值和左值
+				Len = semantics::builder->CreateSub(semantics::llvm_value[semantics::llvm_value.size() - 2], llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[0].first));
 				len = periods[0] - temp.range[0].first;
-				semantics::llvm_value.pop_back();
+				// semantics::llvm_value.pop_back();
 			}
 			else
 			{
@@ -1035,19 +1043,17 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				int dep = temp.range.size() - 1;
 				auto Dep = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range.size() - 1);
 				int end = periods[dep - 1];
-				auto End = semantics::llvm_value.back();							 // periods[dep]
-				auto End1 = semantics::llvm_value[semantics::llvm_value.size() - 1]; // end
+				auto End = semantics::llvm_value[semantics::llvm_value.size() - 2];     // 这是左值数组的从右往左的第一维
+                auto End1 = semantics::llvm_value[semantics::llvm_value.size() - 3];    // 这是左值数组的从右往左的第二维
 
-				auto templen = semantics::builder->CreateSub(End, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep].first - 1));
-				len = periods[dep] - temp.range[dep].first + 1;
+				auto templen = semantics::builder->CreateSub(End, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep].first));
+				len = periods[dep] - temp.range[dep].first;
 
 				auto Left = semantics::builder->CreateSub(End1, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep - 1].first)); //(end - temp.range[dep - 1].first)
 				auto Right = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep].second);										 // temp.range[dep].second
 				auto mul = semantics::builder->CreateMul(Left, Right);
 				Len = semantics::builder->CreateAdd(templen, mul);
 				len += (end - temp.range[dep - 1].first) * temp.range[dep].second;
-				semantics::llvm_value.pop_back();
-				semantics::llvm_value.pop_back();
 			}
 			int wid = 1;
 			llvm::Value *Wid = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);
@@ -1060,21 +1066,22 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					Wid = semantics::builder->CreateMul(tempwid, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[i].second));
 					wid *= temp.range[i].second;
 				}
+				auto offset = semantics::builder->CreateSub(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), periods[location]), llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context),temp.range[location].first));    // offset 是当前这一维的偏移量
+				auto cur_offset = semantics::builder->CreateMul(offset, Wid);   // cur_offset 是当前这一维的起点在总空间中的偏移
 				auto templen = Len;
-				Len = semantics::builder->CreateAdd(Wid, templen);
-				len += wid;
+				Len = semantics::builder->CreateAdd(cur_offset, templen);
+				// auto templen = Len;
+				// Len = semantics::builder->CreateAdd(Wid, templen);
+				len += wid; // 这个 len 的计算目前是错误的，待修改
 				wid = 1;
 				Wid = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);
 				location--;
-				semantics::llvm_value.pop_back();
+				// semantics::llvm_value.pop_back();
 			}
 			
 			if (temp.type != semantics::exp_type.back() && !("real" == temp.type && "integer" == semantics::exp_type.back()))
 			{
 				cout << "Line:" << ctx->variable()->getStart()->getLine() << "    Cannot assign values to variables of different types" << endl;
-				semantics::exp_type.pop_back();
-				semantics::exp_type.pop_back();
-				semantics::llvm_value.pop_back();
 			}
 			else
 			{
@@ -1085,7 +1092,8 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					/* real型可以兼容integer */
 					if ("integer" == temp.type)
 					{
-
+						std::cout << "Line: " << ctx->getStart()->getLine() << " is integer and integer" << std::endl;
+						std::cout << "len: " << len << std::endl;
 						// int integer = atoi(semantics::exp_value.back().c_str());
 						// cout<<"int:"<<integer<<endl;
 						// auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
@@ -1138,10 +1146,14 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					temp.arr_val[len] = semantics::exp_value.back();
 				}
 
-				semantics::exp_type.pop_back();
-				semantics::exp_value.pop_back();
-				semantics::llvm_value.pop_back();
 			}
+			for(int i = 0; i <= periods.size(); i++)
+			{
+				// 每一个维度，都对应了栈中一个值。且栈顶是右值，所以要多出一遍
+				semantics::exp_type.pop_back();
+                semantics::exp_value.pop_back();
+                semantics::llvm_value.pop_back();
+			} 
 		}
 		else if (temp.is_record)
 		{
@@ -1885,9 +1897,9 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 			auto Dep = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range.size() - 1);
 			int end = periods[dep - 1];
 			auto End = semantics::llvm_value.back();							 // periods[dep]
-			auto End1 = semantics::llvm_value[semantics::llvm_value.size() - 1]; // end
+			auto End1 = semantics::llvm_value[semantics::llvm_value.size() - 2]; // end
 
-			auto templen = semantics::builder->CreateSub(End, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep].first - 1));
+			auto templen = semantics::builder->CreateSub(End, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep].first));
 			len = periods[dep] - temp.range[dep].first + 1;
 
 			auto Left = semantics::builder->CreateSub(End1, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep - 1].first)); //(end - temp.range[dep - 1].first)
@@ -1898,8 +1910,8 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 			semantics::llvm_value.pop_back();
 			semantics::llvm_value.pop_back();
 		}
-		int wid = 1;
-		llvm::Value *Wid = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);
+		int wid = 1; 
+		llvm::Value *Wid = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);	// Wid 是右边所有维的总宽度
 		int location = temp.range.size() - 3;
 		while (location >= 0)
 		{
@@ -1909,9 +1921,11 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 				Wid = semantics::builder->CreateMul(tempwid, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[i].second));
 				wid *= temp.range[i].second;
 			}
+			auto offset = semantics::builder->CreateSub(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), periods[location]), llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[location].first));	// offset 是当前这一维的偏移量
+			auto cur_offset = semantics::builder->CreateMul(offset, Wid);	// cur_offset 是当前这一维的起点在总空间中的偏移
 			auto templen = Len;
-			Len = semantics::builder->CreateAdd(Wid, templen);
-			len += wid;
+            Len = semantics::builder->CreateAdd(cur_offset, templen);
+			len += wid;				// 这个 len 的计算目前是错误的，待修改
 			wid = 1;
 			Wid = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);
 			location--;
@@ -3235,6 +3249,142 @@ void semanticsListener::exitCallWriteln(PascalSParser::CallWritelnContext *ctx)
 		semantics::builder->CreateCall(semantics::mod->getFunction("printf"), printf_args);
 	}
 }
+
+void semanticsListener::exitCallReadln(PascalSParser::CallReadlnContext * ctx)
+{
+	if (semantics::depth != 0)
+        return;
+
+	// std::cout << "number : " << semantics::llvm_value.size() << std::endl;
+	llvm::SmallVector<llvm::Value*, 2> scanf_args;
+	std::string varparts = ctx->variable()->id_varparts()->getText();
+    std::string id = ctx->variable()->ID()->getText();
+    if ("" == varparts)
+    {
+        // 没有 varparts 就说明这只是一个普通的变量名
+        table &symbol = semantics::stack_st.locate_table(id);
+        if (symbol.is_const || symbol.is_type || symbol.is_record || symbol.is_array || symbol.is_arg)
+        {
+            // 如果给的符号在符号表中是不可赋值的，输出报错
+            std::cerr << ctx->getStart()->getLine() << "Left value is must be modifiable" << std::endl;
+        }
+        else
+        {
+            if ("err" == symbol.type)
+            {
+                std::cerr << "Undefined variable: " << id << std::endl;
+                return;
+            }
+            else if ("integer" == symbol.type || "boolean" == symbol.type)
+            {
+                // 注意 boolean 型变量的输入也得是整数
+                scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%d"));
+            }
+            else if ("char" == symbol.type)
+            {
+                scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%c"));
+            }
+            else if ("real" == symbol.type)
+            {
+                scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%f"));
+            }
+            else
+            {
+                std::cerr << "no support" << std::endl;
+                return;
+            }
+            scanf_args.push_back(symbol.all);
+            semantics::builder->CreateCall(semantics::mod->getFunction("scanf"), scanf_args);
+        }
+    }
+	else
+    {
+        // 若 varparts 不为空，则表示要从数组或者结构体中取值
+        if (std::string::npos != varparts.find('[') && std::string::npos != varparts.find('.'))
+        {
+            // 不能出现结构体和数组的相互嵌套
+            std::cerr << "Line " << ctx->getStart()->getLine() << ": Unsupported variable type" << std::endl;
+            return;
+        }
+        else if (std::string::npos != varparts.find('.'))
+        {
+            // 如果是结构体，就只能是单层的
+            if (varparts.find('.') != varparts.rfind('.'))
+            {
+                std::cerr << "Line " << ctx->getStart()->getLine() << ": Unsupported variable type" << std::endl;
+                return;
+            }
+            else
+            {
+                // 如果是单层结构体，要给其对应元素赋值
+                table &symbol = semantics::stack_st.locate_table(id);
+                std::string element = ctx->variable()->id_varparts()->id_varpart()->getText();
+				element = element.substr(1);
+				// std::cout << "element: " << element << std::endl;
+                if (0 == symbol.records.count(element))
+                {
+                    // 在记录型变量中找不到指定元素
+                    std::cerr << "Line " << ctx->getStart()->getLine() << ": \'" << element << "\' is not a member of \'" << id << "\'" << std::endl;
+                    return;
+                }
+                else
+                {
+                    std::string type = symbol.records[element].type;
+                    if (type == "integer" || type == "boolean")
+                        scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%d"));
+                    else if (type == "real")
+                        scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%f"));
+                    else if (type == "char")
+                        scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%c"));
+                    else
+                    {
+                        std::cerr << "Line " << ctx->getStart()->getLine() << ": Wrong type" << std::endl;
+                        return;
+                    }
+
+                    scanf_args.push_back(symbol.records[element].all);
+                    semantics::builder->CreateCall(semantics::mod->getFunction("scanf"), scanf_args);
+                }
+            }
+        }
+		else if (std::string::npos != varparts.find('['))
+        {
+            // 仅找到 [ 的情况，说明要从数组中提取
+			/*
+			std::cout << "varparts: " << varparts << std::endl;
+            semantics::id = id; // 为了在 ArrayAccess 中做下标的类型检查，需要把 id 传递过去
+            table &symbol = semantics::stack_st.locate_table(id);
+            for (int i = 0; i < varparts.size(); i++)
+            {
+                if ('[' == varparts[i] || ']' == varparts[i])
+                    varparts[i] = ',';
+                if (',' == varparts[i] && 0 != i && ',' == varparts[i - 1])
+                    varparts[i] = ' ';
+            }
+            varparts.erase(0, 1);
+			std::cout << "varparts after handle: " << varparts << std::endl;
+            int offset = 0;
+			std::cout << semantics::llvm_value.size() << std::endl;
+			*/
+
+			// 太过复杂，暂时放弃直接对数组使用read
+			// 但是可以通过先给普通变量赋值，再赋给数组元素的方式间接读取输入
+			std::cerr << "Line " << ctx->getStart()->getLine() << ": Reading for array is not be supported temporarily" << std::endl;
+        }
+
+    }
+}
+
 void semanticsListener::enterIf(PascalSParser::IfContext *ctx)
 {
 }
+
+void semanticsListener::print_value(std::string mes, llvm::Value* value)
+{
+	mes += "%d\n";
+	llvm::SmallVector<llvm::Value*, 2> args;
+	args.push_back(semantics::builder->CreateGlobalStringPtr(mes.c_str()));
+	args.push_back(value);
+	semantics::builder->CreateCall(semantics::mod->getFunction("printf"), args);
+}
+

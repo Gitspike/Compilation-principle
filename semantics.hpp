@@ -259,7 +259,7 @@ public:
    void visitTerminal(antlr4::tree::TerminalNode * node) override{};
    void visitErrorNode(antlr4::tree::ErrorNode * node) override{};
 
-   
+   void print_value(std::string mes, llvm::Value* value);
 
 };
 

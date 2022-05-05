@@ -4927,7 +4927,7 @@ std::vector<std::string> PascalSParser::_literalNames = {
   "'['", "']'", "'of'", "'integer'", "'real'", "'boolean'", "'char'", "'..'", 
   "'var'", "':'", "'function'", "'procedure'", "'begin'", "'if'", "'then'", 
   "'case'", "'while'", "'do'", "'repeat'", "'untile'", "'for'", "'else'", 
-  "'to'", "'downto'", "'writeln'", "'readln'", "'not'"
+  "'to'", "'downto'", "'write'", "'read'", "'not'"
 };
 
 std::vector<std::string> PascalSParser::_symbolicNames = {

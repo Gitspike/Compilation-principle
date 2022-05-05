@@ -50,8 +50,8 @@ null
 'else'
 'to'
 'downto'
-'writeln'
-'readln'
+'write'
+'read'
 'not'
 null
 null
