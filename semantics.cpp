@@ -1446,6 +1446,12 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 				auto v = semantics::builder->CreateFMul(ItoD, right_llvm);
 				semantics::llvm_value.push_back(v);
 			}
+			else if("integer"==right_type)
+			{
+				auto ItoD=semantics::builder->CreateSIToFP(right_llvm,llvm::Type::getDoubleTy(*semantics::context));
+				auto v = semantics::builder->CreateFMul(left_llvm, ItoD);
+				semantics::llvm_value.push_back(v);
+			}
 			else
 			{
 				auto v = semantics::builder->CreateFMul(left_llvm, right_llvm);
@@ -1562,6 +1568,7 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 		return;
 	if (1 == semantics::iscall)
 		return;
+	
 	string id = ctx->ID()->getText();
 	if ("true" == id || "false" == id)
 	{
@@ -1642,8 +1649,8 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 			/* 变量 */
 			if ("" == temp.value)
 			{
-				/* cout << "line: " << ctx->getStart()->getLine() << "    Variable has no value!\n";
-				return; */
+				cout << "line: " << ctx->getStart()->getLine() << "    Variable has no value!\n";
+				
 			}
 			else
 			{
@@ -1773,6 +1780,7 @@ void semanticsListener::enterVariable(PascalSParser::VariableContext *ctx)
 	}
 	else if (true == temp.is_array || true == temp.is_record)
 	{
+		
 		semantics::id = name;
 		if (temp.is_array)
 		{
@@ -1938,6 +1946,7 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 			Len = semantics::builder->CreateSub(semantics::llvm_value.back(), llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[0].first));
 			len = periods[0] - temp.range[0].first;
 			semantics::llvm_value.pop_back();
+			semantics::exp_type.pop_back();
 		}
 		else
 		{
@@ -1958,6 +1967,8 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 			len += (end - temp.range[dep - 1].first) * temp.range[dep].second;
 			semantics::llvm_value.pop_back();
 			semantics::llvm_value.pop_back();
+			semantics::exp_type.pop_back();
+			semantics::exp_type.pop_back();
 		}
 		int wid = 1; 
 		llvm::Value *Wid = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);	// Wid 是右边所有维的总宽度
@@ -1979,6 +1990,7 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 			Wid = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);
 			location--;
 			semantics::llvm_value.pop_back();
+			semantics::exp_type.pop_back();
 			
 		}
 
@@ -2092,11 +2104,13 @@ void semanticsListener::exitNegativeTerm(PascalSParser::NegativeTermContext *ctx
 	string t = semantics::exp_type.back();
 	string v = semantics::exp_value.back();
 	llvm::Value *llvm_v = semantics::llvm_value.back();
+	
 	if ("char" == t || "boolean" == t)
 	{
 		cout << "line:" << ctx->getStart()->getLine() << "    wrong type of negation" << endl;
 		return;
 	}
+	
 	else if ("integer" == t)
 	{
 
@@ -2118,8 +2132,8 @@ void semanticsListener::exitNegativeTerm(PascalSParser::NegativeTermContext *ctx
 		string r = to_string(real);
 		semantics::exp_value.pop_back();
 		semantics::exp_value.push_back(r);
-		auto llvm_zero = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), 0.0);
-		auto value = semantics::builder->CreateSub(llvm_zero, llvm_v);
+		auto llvm_zero = llvm::ConstantFP::get(llvm::Type::getDoubleTy(*semantics::context), 0.0);
+		auto value = semantics::builder->CreateFSub(llvm_zero, llvm_v);
 		semantics::llvm_value.pop_back();
 		semantics::llvm_value.push_back(value);
 	}
@@ -3266,6 +3280,7 @@ void semanticsListener::exitCallWriteln(PascalSParser::CallWritelnContext *ctx)
 	if (semantics::depth != 0)
 		return;
 	std::string writeln_args = ctx->expression_list()->getText();
+	
 	// writeln_args 的参数需要转换成 llvm 的形式，然后传递给 llvm 中保存的 printf 函数
 	int args_count = 1; // printf 至少应有一个字符串参数，即 printf_format
 	std::string printf_format = "";
@@ -3297,6 +3312,7 @@ void semanticsListener::exitCallWriteln(PascalSParser::CallWritelnContext *ctx)
 		} while (std::string::npos != split_pos);
 		// std::cout << "printf args number: " << args_count << std::endl;
 		// 计算好 write 的参数的数量后，需要将其转变为 printf 的参数
+		
 		assert (semantics::exp_type.size() == semantics::llvm_value.size());	// 如果这个断言出错，说明exp_type和llvm_value并不是一一对应的
 		// 构造第一个参数 printf_format，它应该根据参数表达式的类型对应的格式化输出符号组成
 		int st_size = semantics::exp_type.size();
