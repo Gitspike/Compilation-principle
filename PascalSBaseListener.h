@@ -187,6 +187,12 @@ public:
   virtual void enterElse_part(PascalSParser::Else_partContext * /*ctx*/) override { }
   virtual void exitElse_part(PascalSParser::Else_partContext * /*ctx*/) override { }
 
+  virtual void enterThen_statement(PascalSParser::Then_statementContext * /*ctx*/) override { }
+  virtual void exitThen_statement(PascalSParser::Then_statementContext * /*ctx*/) override { }
+
+  virtual void enterIf_condition(PascalSParser::If_conditionContext * /*ctx*/) override { }
+  virtual void exitIf_condition(PascalSParser::If_conditionContext * /*ctx*/) override { }
+
   virtual void enterCase_body(PascalSParser::Case_bodyContext * /*ctx*/) override { }
   virtual void exitCase_body(PascalSParser::Case_bodyContext * /*ctx*/) override { }
 

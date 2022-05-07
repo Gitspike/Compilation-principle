@@ -185,6 +185,12 @@ public:
   virtual void enterElse_part(PascalSParser::Else_partContext *ctx) = 0;
   virtual void exitElse_part(PascalSParser::Else_partContext *ctx) = 0;
 
+  virtual void enterThen_statement(PascalSParser::Then_statementContext *ctx) = 0;
+  virtual void exitThen_statement(PascalSParser::Then_statementContext *ctx) = 0;
+
+  virtual void enterIf_condition(PascalSParser::If_conditionContext *ctx) = 0;
+  virtual void exitIf_condition(PascalSParser::If_conditionContext *ctx) = 0;
+
   virtual void enterCase_body(PascalSParser::Case_bodyContext *ctx) = 0;
   virtual void exitCase_body(PascalSParser::Case_bodyContext *ctx) = 0;
 

@@ -124,7 +124,7 @@ statement
 	: compound_statement											# Block
 	| variable assignop expression									# Assign
 	| call_procedure_statement										# Call
-	| 'if' expression 'then' statement else_part					# If
+	| 'if' if_condition 'then' then_statement else_part				# If
 	| 'case' expression 'of' case_body 'end'						# Case
 	| 'while' expression 'do' statement								# While
 	| 'repeat' statement_list 'untile' expression					# Repeat
@@ -148,7 +148,8 @@ else_part
 	: 'else' statement
 	|
 	;
-
+then_statement: statement;
+if_condition: expression;
 /* 选择分支 */
 case_body
 	: branch_list
@@ -171,8 +172,8 @@ updown: 'to' | 'downto';
 call_procedure_statement
 	: ID								# CallWithNoPara 
 	| ID '(' expression_list ')'		# CallWithPara
-	| 'writeln' '(' expression_list ')'	# CallWriteln	// 将表达式的结果输出并换行
-	| 'readln' '(' ID ')'				# CallReadln	// 将输入的内容保存在变量中，原版Pascal在这里不会做类型检查
+	| 'write' '(' expression_list ')'	# CallWriteln	// 将表达式的结果输出并换行
+	| 'read' '(' variable ')'				# CallReadln	// 将输入的内容保存在变量中，原版Pascal在这里不会做类型检查
 	;
 
 /* 表达式 */

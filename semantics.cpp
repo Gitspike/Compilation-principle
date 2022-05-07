@@ -9,6 +9,10 @@ namespace semantics
 	vector<int> condition;	   //根据if条件设置该变量
 	vector<int> cur_condition; //通过比较该值和上面的值判断是否修改执行栈的动作
 	vector<llvm::BasicBlock *> block;
+	vector<llvm::BasicBlock *> thenBlock;
+	vector<llvm::BasicBlock *> elseBlock;
+	vector<llvm::BasicBlock *> mainBlock1;
+
 	int is_while;
 	int iscall;			  //为1时处于调用阶段，constantid不入栈
 	int depth;			  // 记录语义层次，只有为0时才做语义动作
@@ -80,6 +84,11 @@ void semanticsListener::enterProgram(PascalSParser::ProgramContext *ctx)
 	args.push_back(llvm::Type::getInt8PtrTy(*semantics::context));
 	auto printfType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*semantics::context), args, true);
 	auto printfFunction = llvm::Function::Create(printfType, llvm::Function::ExternalLinkage, "printf", semantics::mod.get());
+	// 创建 scanf 函数
+	llvm::SmallVector<llvm::Type *, 1> args_out;
+	args_out.push_back(llvm::Type::getInt8PtrTy(*semantics::context));
+	auto scanfType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*semantics::context), args_out, true);
+	auto scanfFunction = llvm::Function::Create(scanfType, llvm::Function::ExternalLinkage, "scanf", semantics::mod.get());
 }
 
 void semanticsListener::enterProgram_head(PascalSParser::Program_headContext *ctx)
@@ -96,6 +105,18 @@ void semanticsListener::enterProgram_head(PascalSParser::Program_headContext *ct
 
 	// 主程序入栈
 	semantics::stack_st.insert_table(symbol);
+	
+	// 测试
+	/*
+	auto float_value = llvm::ConstantFP::get(llvm::Type::getDoubleTy(*semantics::context), 11.11);
+	print_value("float(11.11): %lf\n", float_value);
+	auto double_value = llvm::ConstantFP::get(llvm::Type::getDoubleTy(*semantics::context), 22.22);
+	print_value("double(22.22): %lf\n", double_value);
+	auto char_value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), 'a');
+	print_value("char('a'): %c\n", char_value);
+	auto int_value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 32);
+	print_value("integer(32): %d\n", int_value);
+	*/
 }
 
 void semanticsListener::enterSingleConstDeclaration(PascalSParser::SingleConstDeclarationContext *ctx)
@@ -127,9 +148,9 @@ void semanticsListener::enterSingleConstDeclaration(PascalSParser::SingleConstDe
 		// 常量类型为浮点
 		table symbol(const_id, "real", const_value);
 		symbol.is_const = true;
-		symbol.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+		symbol.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
 		// 获取浮点值
-		auto value = llvm::ConstantFP::get(llvm::Type::getFloatTy(*semantics::context), atof(const_value.c_str()));
+		auto value = llvm::ConstantFP::get(llvm::Type::getDoubleTy(*semantics::context), atof(const_value.c_str()));
 
 		semantics::builder->CreateStore(value, symbol.all);
 		semantics::stack_st.insert_table(symbol);
@@ -179,12 +200,12 @@ void semanticsListener::enterSingleConstDeclaration(PascalSParser::SingleConstDe
 			}
 			else if ("real" == target_symbol.type)
 			{
-				symbol.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+				symbol.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
 				llvm::Constant *value;
 				if ('-' == const_value[0])
-					value = llvm::ConstantFP::get(llvm::Type::getFloatTy(*semantics::context), -atof(target_symbol.value.c_str()));
+					value = llvm::ConstantFP::get(llvm::Type::getDoubleTy(*semantics::context), -atof(target_symbol.value.c_str()));
 				else
-					value = llvm::ConstantFP::get(llvm::Type::getFloatTy(*semantics::context), atof(target_symbol.value.c_str()));
+					value = llvm::ConstantFP::get(llvm::Type::getDoubleTy(*semantics::context), atof(target_symbol.value.c_str()));
 				semantics::builder->CreateStore(value, symbol.all);
 				semantics::stack_st.insert_table(symbol);
 			}
@@ -280,8 +301,8 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 			{
 				element.type = "real";
 				element.value = "0.0";
-				element.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
-				auto value = llvm::ConstantFP::get(llvm::Type::getFloatTy(*semantics::context), 0.0);
+				element.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
+				auto value = llvm::ConstantFP::get(llvm::Type::getDoubleTy(*semantics::context), 0.0);
 				semantics::builder->CreateStore(value, element.all);
 			}
 			else if ("char" == var_type)
@@ -376,7 +397,7 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 				}
 				else if ("real" == array_type)
 				{
-					element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getFloatTy(*semantics::context), range), nullptr));
+					element.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getDoubleTy(*semantics::context), range), nullptr));
 				}
 				else if ("boolean" == array_type)
 				{
@@ -419,8 +440,8 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 		{
 			table symbol(id, "real", "0");
 
-			symbol.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
-			auto value = llvm::ConstantFP::get(llvm::Type::getFloatTy(*semantics::context), 0.0);
+			symbol.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
+			auto value = llvm::ConstantFP::get(llvm::Type::getDoubleTy(*semantics::context), 0.0);
 
 			semantics::builder->CreateStore(value, symbol.all);
 			semantics::stack_st.insert_table(symbol);
@@ -530,7 +551,7 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 			}
 			else if ("real" == array_type)
 			{
-				symbol.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getFloatTy(*semantics::context), range), nullptr));
+				symbol.all_item.push_back(semantics::builder->CreateAlloca(llvm::ArrayType::get(llvm::Type::getDoubleTy(*semantics::context), range), nullptr));
 			}
 			else if ("boolean" == array_type)
 			{
@@ -553,7 +574,7 @@ void semanticsListener::exitProgram(PascalSParser::ProgramContext *ctx)
 
 	// 输出汇编文件
 	std::error_code errorCode;
-	std::string filename = "main.s"; // 汇编文件名
+	std::string filename = ".tmp.main.s"; // 汇编文件名
 	llvm::raw_fd_ostream dest(filename, errorCode, llvm::sys::fs::OF_None);
 	llvm::legacy::PassManager pass;
 	llvm::CodeGenFileType type = llvm::CGFT_AssemblyFile; // 文件类型为汇编
@@ -766,7 +787,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				{
 					if (NULL == temp.all)
 					{
-						temp.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+						temp.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
 					}
 					semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					temp.value = semantics::exp_value.back();
@@ -820,7 +841,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					else if ("real" == temp.type)
 					{
 						// int integer = atoi(semantics::exp_value.back().c_str());
-						// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), integer);
+						// auto value = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), integer);
 						semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					}
 					temp.value = semantics::exp_value.back();
@@ -841,10 +862,10 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				{
 					if (NULL == temp.all)
 					{
-						temp.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+						temp.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
 					}
 					// double real = atof(semantics::exp_value.back().c_str());
-					// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+					// auto value = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), real);
 					semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					temp.value = semantics::exp_value.back();
 				}
@@ -904,7 +925,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					else if ("real" == temp2.type)
 					{
 						// int integer = atoi(semantics::exp_value.back().c_str());
-						// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), integer);
+						// auto value = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), integer);
 						semantics::builder->CreateStore(semantics::llvm_value.back(), temp2.all);
 					}
 
@@ -935,10 +956,10 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				{
 					if (NULL == temp2.all)
 					{
-						temp2.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+						temp2.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
 					}
 					// double real = atof(semantics::exp_value.back().c_str());
-					// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+					// auto value = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), real);
 					semantics::builder->CreateStore(semantics::llvm_value.back(), temp2.all);
 					temp2.value = semantics::exp_value.back();
 					semantics::exp_type.pop_back();
@@ -1022,12 +1043,15 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 			}
 			int len;
 			llvm::Value *Len;
+			// 不论数组有几维，llvm_value的栈顶一定是右值
 			/* 数组只有一维 */
 			if (1 == periods.size())
 			{
-				Len = semantics::builder->CreateSub(semantics::llvm_value.back(), llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[0].first));
+				// print_value("value is : ", semantics::llvm_value[semantics::llvm_value.size() - 2]);
+				// 一维数组中，llvm_value中从栈顶往下有2个可用值，分别是右值和左值
+				Len = semantics::builder->CreateSub(semantics::llvm_value[semantics::llvm_value.size() - 2], llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[0].first));
 				len = periods[0] - temp.range[0].first;
-				semantics::llvm_value.pop_back();
+				// semantics::llvm_value.pop_back();
 			}
 			else
 			{
@@ -1035,19 +1059,17 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				int dep = temp.range.size() - 1;
 				auto Dep = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range.size() - 1);
 				int end = periods[dep - 1];
-				auto End = semantics::llvm_value.back();							 // periods[dep]
-				auto End1 = semantics::llvm_value[semantics::llvm_value.size() - 1]; // end
+				auto End = semantics::llvm_value[semantics::llvm_value.size() - 2];     // 这是左值数组的从右往左的第一维
+                auto End1 = semantics::llvm_value[semantics::llvm_value.size() - 3];    // 这是左值数组的从右往左的第二维
 
-				auto templen = semantics::builder->CreateSub(End, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep].first - 1));
-				len = periods[dep] - temp.range[dep].first + 1;
+				auto templen = semantics::builder->CreateSub(End, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep].first));
+				len = periods[dep] - temp.range[dep].first;
 
 				auto Left = semantics::builder->CreateSub(End1, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep - 1].first)); //(end - temp.range[dep - 1].first)
 				auto Right = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep].second);										 // temp.range[dep].second
 				auto mul = semantics::builder->CreateMul(Left, Right);
 				Len = semantics::builder->CreateAdd(templen, mul);
 				len += (end - temp.range[dep - 1].first) * temp.range[dep].second;
-				semantics::llvm_value.pop_back();
-				semantics::llvm_value.pop_back();
 			}
 			int wid = 1;
 			llvm::Value *Wid = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);
@@ -1060,21 +1082,22 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					Wid = semantics::builder->CreateMul(tempwid, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[i].second));
 					wid *= temp.range[i].second;
 				}
+				auto offset = semantics::builder->CreateSub(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), periods[location]), llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context),temp.range[location].first));    // offset 是当前这一维的偏移量
+				auto cur_offset = semantics::builder->CreateMul(offset, Wid);   // cur_offset 是当前这一维的起点在总空间中的偏移
 				auto templen = Len;
-				Len = semantics::builder->CreateAdd(Wid, templen);
-				len += wid;
+				Len = semantics::builder->CreateAdd(cur_offset, templen);
+				// auto templen = Len;
+				// Len = semantics::builder->CreateAdd(Wid, templen);
+				len += wid; // 这个 len 的计算目前是错误的，待修改
 				wid = 1;
 				Wid = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);
 				location--;
-				semantics::llvm_value.pop_back();
+				// semantics::llvm_value.pop_back();
 			}
 			
 			if (temp.type != semantics::exp_type.back() && !("real" == temp.type && "integer" == semantics::exp_type.back()))
 			{
 				cout << "Line:" << ctx->variable()->getStart()->getLine() << "    Cannot assign values to variables of different types" << endl;
-				semantics::exp_type.pop_back();
-				semantics::exp_type.pop_back();
-				semantics::llvm_value.pop_back();
 			}
 			else
 			{
@@ -1085,7 +1108,6 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					/* real型可以兼容integer */
 					if ("integer" == temp.type)
 					{
-
 						// int integer = atoi(semantics::exp_value.back().c_str());
 						// cout<<"int:"<<integer<<endl;
 						// auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
@@ -1098,10 +1120,10 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					else if ("real" == temp.type)
 					{
 						// int integer = atoi(semantics::exp_value.back().c_str());
-						// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), integer);
-						auto index0 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), 0);
-						auto index_end = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), len);
-						auto addr0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getFloatTy(*semantics::context), temp.arr_len), temp.all_item.back(), {index0, Len});
+						// auto value = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), integer);
+						auto index0 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), 0);
+						auto index_end = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), len);
+						auto addr0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getDoubleTy(*semantics::context), temp.arr_len), temp.all_item.back(), {index0, Len});
 						semantics::builder->CreateStore(semantics::llvm_value.back(), addr0);
 					}
 					temp.arr_val[len] = semantics::exp_value.back();
@@ -1120,9 +1142,9 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				else if ("real" == semantics::exp_type.back())
 				{
 
-					auto index0 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), 0);
-					auto index_end = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), len);
-					auto addr0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getFloatTy(*semantics::context), temp.arr_len), temp.all_item.back(), {index0, Len});
+					auto index0 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), 0);
+					auto index_end = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), len);
+					auto addr0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getDoubleTy(*semantics::context), temp.arr_len), temp.all_item.back(), {index0, Len});
 					semantics::builder->CreateStore(semantics::llvm_value.back(), addr0);
 					temp.arr_val[len] = semantics::exp_value.back();
 				}
@@ -1138,10 +1160,14 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					temp.arr_val[len] = semantics::exp_value.back();
 				}
 
-				semantics::exp_type.pop_back();
-				semantics::exp_value.pop_back();
-				semantics::llvm_value.pop_back();
 			}
+			for(int i = 0; i <= periods.size(); i++)
+			{
+				// 每一个维度，都对应了栈中一个值。且栈顶是右值，所以要多出一遍
+				semantics::exp_type.pop_back();
+                semantics::exp_value.pop_back();
+                semantics::llvm_value.pop_back();
+			} 
 		}
 		else if (temp.is_record)
 		{
@@ -1177,7 +1203,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 						else if ("real" == r_ele.type)
 						{
 							// int integer = atoi(semantics::exp_value.back().c_str());
-							// auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), integer);
+							// auto value = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), integer);
 							semantics::builder->CreateStore(semantics::llvm_value.back(), r_ele.all);
 						}
 						r_ele.value = semantics::exp_value.back();
@@ -1198,10 +1224,10 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					{
 						if (NULL == r_ele.all)
 						{
-							r_ele.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
+							r_ele.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
 						}
 						double real = atof(semantics::exp_value.back().c_str());
-						auto value = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+						auto value = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), real);
 						semantics::builder->CreateStore(semantics::llvm_value.back(), r_ele.all);
 						r_ele.value = semantics::exp_value.back();
 					}
@@ -1266,7 +1292,7 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 		/* 加法 */
 		if (left_type != right_type && !(("integer" == left_type && "real" == right_type) || ("integer" == right_type && "real" == left_type)))
 		{
-			cout << "line:" << ctx->getStart()->getLine() << "   cannot multiply variables of different types" << endl;
+			cout << "line:" << ctx->getStart()->getLine() << "   cannot add variables of different types" << endl;
 			return;
 		}
 		if ("char" == right_type || "boolean" == right_type || "char" == left_type || "boolean" == left_type)
@@ -1277,16 +1303,26 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 		if ("real" == right_type || "real" == left_type)
 		{
 			semantics::exp_type.push_back("real");
-			// auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
-			// auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
-
-			auto v = semantics::builder->CreateFAdd(left_llvm, right_llvm);
+			// auto value1 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), atof(left.c_str()));
+			// auto value2 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), atof(right.c_str()));
+			if("integer"==left_type)
+			{
+				auto ItoD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+				auto v = semantics::builder->CreateFAdd(ItoD, right_llvm);
+				semantics::llvm_value.push_back(v);
+			}
+			else
+			{
+				auto v = semantics::builder->CreateFAdd(left_llvm, right_llvm);
+				semantics::llvm_value.push_back(v);
+			}
+			
 			double r = atof(left.c_str()) + atof(right.c_str());
 			/* ostringstream os;
 			os << r; */
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
-			semantics::llvm_value.push_back(v);
+			
 		}
 		else if ("integer" == right_type && "integer" == left_type)
 		{
@@ -1308,7 +1344,7 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 	{
 		if (left_type != right_type && !(("integer" == left_type && "real" == right_type) || ("integer" == right_type && "real" == left_type)))
 		{
-			cout << "line:" << ctx->getStart()->getLine() << "   cannot multiply variables of different types" << endl;
+			cout << "line:" << ctx->getStart()->getLine() << "   cannot sub variables of different types" << endl;
 			return;
 		}
 		if ("char" == right_type || "boolean" == right_type || "char" == left_type || "boolean" == left_type)
@@ -1319,16 +1355,25 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 		if ("real" == right_type || "real" == left_type)
 		{
 			semantics::exp_type.push_back("real");
-			// auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
-			// auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
-
-			auto v = semantics::builder->CreateFSub(left_llvm, right_llvm);
+			// auto value1 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), atof(left.c_str()));
+			// auto value2 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), atof(right.c_str()));
+			if("integer"==left_type)
+			{
+				auto ItoD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+				auto v = semantics::builder->CreateFSub(ItoD, right_llvm);
+				semantics::llvm_value.push_back(v);
+			}
+			else
+			{
+				auto v = semantics::builder->CreateFSub(left_llvm, right_llvm);
+				semantics::llvm_value.push_back(v);
+			}
+			
 			double r = atof(left.c_str()) - atof(right.c_str());
 			/* ostringstream os;
 			os << r; */
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
-			semantics::llvm_value.push_back(v);
 		}
 		else if ("integer" == right_type && "integer" == left_type)
 		{
@@ -1382,7 +1427,7 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 		/* 乘法 */
 		if (left_type != right_type && !(("integer" == left_type && "real" == right_type) || ("integer" == right_type && "real" == left_type)))
 		{
-			cout << "line:" << ctx->getStart()->getLine() << "   cannot multiply variables of different types" << endl;
+			cout << "line:" << ctx->getStart()->getLine() << "   cannot multiply variables of different types: "<<left_type<<"   "<<right_type << endl;
 			return;
 		}
 		if ("char" == right_type || "boolean" == right_type || "char" == left_type || "boolean" == left_type)
@@ -1393,16 +1438,25 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 		if ("real" == right_type || "real" == left_type)
 		{
 			semantics::exp_type.push_back("real");
-			// auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
-			// auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
-
-			auto v = semantics::builder->CreateFMul(left_llvm, right_llvm);
+			// auto value1 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), atof(left.c_str()));
+			// auto value2 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), atof(right.c_str()));
+			if("integer"==left_type)
+			{
+				auto ItoD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+				auto v = semantics::builder->CreateFMul(ItoD, right_llvm);
+				semantics::llvm_value.push_back(v);
+			}
+			else
+			{
+				auto v = semantics::builder->CreateFMul(left_llvm, right_llvm);
+				semantics::llvm_value.push_back(v);
+			}
 			double r = atof(left.c_str()) * atof(right.c_str());
 			/* ostringstream os;
 			os << r; */
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
-			semantics::llvm_value.push_back(v);
+			
 		}
 		else if ("integer" == right_type && "integer" == left_type)
 		{
@@ -1438,7 +1492,7 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 			semantics::exp_type.push_back("integer");
 			// auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(left.c_str()));
 			// auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
-
+			
 			auto v = semantics::builder->CreateSDiv(left_llvm, right_llvm);
 			int r = atoi(left.c_str()) / atoi(right.c_str());
 			string result = to_string(r);
@@ -1448,10 +1502,19 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 		else if ("real" == right_type || "real" == left_type)
 		{
 			semantics::exp_type.push_back("real");
-			// auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(left.c_str()));
-			// auto value2 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), atof(right.c_str()));
-
-			auto v = semantics::builder->CreateFDiv(left_llvm, right_llvm);
+			// auto value1 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), atof(left.c_str()));
+			// auto value2 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), atof(right.c_str()));
+			if("integer"==left_type)
+			{
+				auto ItoD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+				auto v = semantics::builder->CreateFDiv(ItoD, right_llvm);
+				semantics::llvm_value.push_back(v);
+			}
+			else
+			{
+				auto v = semantics::builder->CreateFDiv(left_llvm, right_llvm);
+				semantics::llvm_value.push_back(v);
+			}
 			// semantics::builder->CreateMod(value1, value2);
 			double r = atof(left.c_str()) / atof(right.c_str());
 			r = r / 1.0;
@@ -1460,7 +1523,7 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 			string result(os.str()); */
 			string result = to_string(r);
 			semantics::exp_value.push_back(result);
-			semantics::llvm_value.push_back(v);
+			
 		}
 	}
 	else if ("mod" == mulop)
@@ -1593,7 +1656,7 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 				}
 				else if ("real" == temp.type)
 				{
-					semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getFloatTy(*semantics::context), temp.all));
+					semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), temp.all));
 				}
 				else if ("char" == temp.type)
 				{
@@ -1622,7 +1685,7 @@ void semanticsListener::exitUnsignConstNumber(PascalSParser::UnsignConstNumberCo
 		// cout << "real\n";
 		semantics::exp_type.push_back("real");
 		float value = atof(number.c_str());
-		semantics::llvm_value.push_back(llvm::ConstantFP::get(llvm::Type::getFloatTy(*semantics::context), value));
+		semantics::llvm_value.push_back(llvm::ConstantFP::get(llvm::Type::getDoubleTy(*semantics::context), value));
 	}
 	else
 	{
@@ -1764,8 +1827,6 @@ void semanticsListener::enterArrayAccess(PascalSParser::ArrayAccessContext *ctx)
 		}
 		else
 		{
-
-
 		}
 	}
 	if ("char" == type_of(ran.c_str()))
@@ -1885,10 +1946,10 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 			auto Dep = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range.size() - 1);
 			int end = periods[dep - 1];
 			auto End = semantics::llvm_value.back();							 // periods[dep]
-			auto End1 = semantics::llvm_value[semantics::llvm_value.size() - 1]; // end
+			auto End1 = semantics::llvm_value[semantics::llvm_value.size() - 2]; // end
 
-			auto templen = semantics::builder->CreateSub(End, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep].first - 1));
-			len = periods[dep] - temp.range[dep].first + 1;
+			auto templen = semantics::builder->CreateSub(End, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep].first));
+			len = periods[dep] - temp.range[dep].first ;
 
 			auto Left = semantics::builder->CreateSub(End1, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep - 1].first)); //(end - temp.range[dep - 1].first)
 			auto Right = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[dep].second);										 // temp.range[dep].second
@@ -1898,8 +1959,8 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 			semantics::llvm_value.pop_back();
 			semantics::llvm_value.pop_back();
 		}
-		int wid = 1;
-		llvm::Value *Wid = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);
+		int wid = 1; 
+		llvm::Value *Wid = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);	// Wid 是右边所有维的总宽度
 		int location = temp.range.size() - 3;
 		while (location >= 0)
 		{
@@ -1909,13 +1970,16 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 				Wid = semantics::builder->CreateMul(tempwid, llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[i].second));
 				wid *= temp.range[i].second;
 			}
+			auto offset = semantics::builder->CreateSub(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), periods[location]), llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), temp.range[location].first));	// offset 是当前这一维的偏移量
+			auto cur_offset = semantics::builder->CreateMul(offset, Wid);	// cur_offset 是当前这一维的起点在总空间中的偏移
 			auto templen = Len;
-			Len = semantics::builder->CreateAdd(Wid, templen);
-			len += wid;
+            Len = semantics::builder->CreateAdd(cur_offset, templen);
+			len += wid;				// 这个 len 的计算目前是错误的，待修改
 			wid = 1;
 			Wid = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);
 			location--;
 			semantics::llvm_value.pop_back();
+			
 		}
 
 		/* if ("" == temp.arr_val[len])
@@ -1927,12 +1991,31 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 
 		semantics::exp_type.push_back(temp.type);
 		semantics::exp_value.push_back(temp.arr_val[len]);
-
-		auto index_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
-		auto index_1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
-		auto addr_11 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, Len});
-		auto value = semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), addr_11);
-		semantics::llvm_value.push_back(value);
+		if("real"==temp.type)
+		{
+			auto index_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
+			auto index_1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
+			auto addr_11 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getDoubleTy(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, Len});
+			auto value = semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), addr_11);
+			semantics::llvm_value.push_back(value);
+		}
+		else if ("char"==temp.type)
+		{
+			auto index_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
+			auto index_1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
+			auto addr_11 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt8Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, Len});
+			auto value = semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context), addr_11);
+			semantics::llvm_value.push_back(value);
+		}
+		
+		else if("boolean"==temp.type||"integer"==temp.type)
+		{
+			auto index_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
+			auto index_1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
+			auto addr_11 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, Len});
+			auto value = semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), addr_11);
+			semantics::llvm_value.push_back(value);
+		}
 		semantics::r_type.clear();
 		semantics::cur_range = 0;
 	}
@@ -1977,6 +2060,21 @@ void semanticsListener::enterRecordAccess(PascalSParser::RecordAccessContext *ct
 				cout << "line: " << ctx->getStart()->getLine() << "    variable has no value" << endl;
 				return;
 			}
+			if("integer"==re.type||"boolean"==re.type)
+			{
+				auto value=semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context),re.all);
+				semantics::llvm_value.push_back(value);
+			}
+			else if("real"==re.type)
+			{
+				auto value=semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context),re.all);
+				semantics::llvm_value.push_back(value);
+			}
+			else if("char"==re.type)
+			{
+				auto value=semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context),re.all);
+				semantics::llvm_value.push_back(value);
+			}
 			semantics::llvm_value.push_back(re.all);
 			semantics::exp_type.push_back(re.type);
 			semantics::exp_value.push_back(re.value);
@@ -2001,10 +2099,12 @@ void semanticsListener::exitNegativeTerm(PascalSParser::NegativeTermContext *ctx
 	}
 	else if ("integer" == t)
 	{
+
 		int integer = atoi(v.c_str());
 		integer = -integer;
 		string r = to_string(integer);
 		semantics::exp_value.pop_back();
+		
 		semantics::exp_value.push_back(r);
 		auto llvm_zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
 		auto value = semantics::builder->CreateSub(llvm_zero, llvm_v);
@@ -2018,7 +2118,7 @@ void semanticsListener::exitNegativeTerm(PascalSParser::NegativeTermContext *ctx
 		string r = to_string(real);
 		semantics::exp_value.pop_back();
 		semantics::exp_value.push_back(r);
-		auto llvm_zero = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), 0.0);
+		auto llvm_zero = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), 0.0);
 		auto value = semantics::builder->CreateSub(llvm_zero, llvm_v);
 		semantics::llvm_value.pop_back();
 		semantics::llvm_value.push_back(value);
@@ -2059,6 +2159,7 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 	semantics::iscall = 0;
 	semantics::stack_st.update_top_table();
 	string lists = ctx->expression_list()->getText();
+	
 	vector<string> args;
 	string name = ctx->ID()->getText();
 
@@ -2092,7 +2193,7 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 	/* 处理参数 */
 	for (i = 0; i < temp.arguments_num; i++)
 	{
-
+		table& temp=semantics::stack_st.locate_table(name);
 		struct Argument a = temp.arguments[i];
 		string a_name = args[i];
 		if (a_name.find('.') != string::npos)
@@ -2127,9 +2228,9 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 			if ("real" == a.type)
 			{
 				double real = atof(re.value.c_str());
-				t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
-				auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
-				semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getFloatTy(*semantics::context), re.all), t.all);
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), real);
+				semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), re.all), t.all);
 				semantics::stack_st.insert_table(t);
 			}
 			else if ("integer" == a.type || "boolean" == a.type)
@@ -2229,7 +2330,7 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 				/* 多维数组 */
 				int dep = periods.size() - 1;
 				int end = periods[dep - 1];
-				len = periods[dep] - temp.range[dep].first + 1;
+				len = periods[dep] - temp.range[dep].first ;
 				len += (end - temp.range[dep - 1].first) * temp.range[dep].second;
 			}
 			int wid = 1;
@@ -2238,7 +2339,7 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 			{
 				for (int i = periods.size() - 1; i > location; i--)
 				{
-					wid *= temp.range[1].second;
+					wid *= temp.range[i].second;
 				}
 				len += wid;
 				wid = 1;
@@ -2255,11 +2356,11 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 			{
 				auto index_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
 				auto index_1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
-				auto addr_0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getFloatTy(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, index_0});
+				auto addr_0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getDoubleTy(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, index_0});
 				double real = atof(temp.arr_val[len].c_str());
-				t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
-				auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
-				semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getFloatTy(*semantics::context), addr_0), t.all);
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), real);
+				semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), addr_0), t.all);
 				semantics::stack_st.insert_table(t);
 			}
 			else if ("integer" == a.type || "boolean" == a.type)
@@ -2315,8 +2416,8 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 
 			table t(a.name, a.type, a_name);
 			double real = atof(a_name.c_str());
-			t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
-			auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+			t.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
+			auto value1 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), real);
 			semantics::builder->CreateStore(value1, t.all);
 			semantics::stack_st.insert_table(t);
 		}
@@ -2334,6 +2435,7 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 			/* 传进来的是变量 */
 			if (!a.pass_value)
 			{
+				
 				/* 传值参数，需要新建符号表 */
 				table &temp2 = semantics::stack_st.locate_table(a_name);
 				if ("err" == temp2.type || (temp2.is_arg))
@@ -2351,17 +2453,17 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 				table t(a.name, a.type, temp2.value);
 				if ("integer" == a.type || "boolean" == a.type)
 				{
-					int integer = atoi(a_name.c_str());
+					//int integer = atoi(a_name.c_str());
 					t.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
 					// auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
 					semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), temp2.all), t.all);
 				}
 				else if ("real" == a.type)
 				{
-					double real = atof(a_name.c_str());
-					t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
-					// auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
-					semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getFloatTy(*semantics::context), temp2.all), t.all);
+					//double real = atof(a_name.c_str());
+					t.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
+					// auto value1 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), real);
+					semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), temp2.all), t.all);
 				}
 				else if ("char" == a.type)
 				{
@@ -2375,12 +2477,13 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 					cout << "line:" << ctx->getStart()->getLine() << "    wrong type of parameter" << endl;
 					return;
 				}
+				
 				semantics::stack_st.insert_table(t);
 			}
 			else if (a.pass_value)
 			{
 				/* 引用，需要获取真正的符号的位置 */
-				table &temp2 = semantics::stack_st.locate_table(a_name);
+				table temp2 = semantics::stack_st.locate_table(a_name);
 				if ("err" == temp2.type || temp2.is_arg)
 				{
 					cout << "line:" << ctx->getStart()->getLine() << "   variable not declared: " << a_name << endl;
@@ -2394,13 +2497,14 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 				int r = semantics::stack_st.get_location(a_name);
 
 				temp.arguments[i].location = r;
+				
 			}
 		}
 	}
 	/* 调用子函数 */
-
+	table& symbol=semantics::stack_st.locate_table(name);
 	semanticsListener listener;
-	antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, temp.ctx);
+	antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, symbol.ctx);
 
 	semantics::stack_st.pop_table();
 }
@@ -2417,9 +2521,10 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 	semantics::iscall = 0;
 	semantics::stack_st.update_top_table();
 	string lists = ctx->expression_list()->getText();
+	
 	vector<string> args;
+	
 	string name = ctx->ID()->getText();
-
 	table &temp = semantics::stack_st.locate_table(name);
 	if ((temp.is_arg) || "err" == temp.type)
 	{
@@ -2450,7 +2555,7 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 	/* 处理参数 */
 	for (i = 0; i < temp.arguments_num; i++)
 	{
-
+		table& temp=semantics::stack_st.locate_table(name);
 		struct Argument a = temp.arguments[i];
 		string a_name = args[i];
 		if (a_name.find('.') != string::npos)
@@ -2485,9 +2590,9 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 			if ("real" == a.type)
 			{
 				double real = atof(re.value.c_str());
-				t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
-				auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
-				semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getFloatTy(*semantics::context), re.all), t.all);
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), real);
+				semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), re.all), t.all);
 				semantics::stack_st.insert_table(t);
 			}
 			else if ("integer" == a.type || "boolean" == a.type)
@@ -2587,7 +2692,7 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 				/* 多维数组 */
 				int dep = periods.size() - 1;
 				int end = periods[dep - 1];
-				len = periods[dep] - temp.range[dep].first + 1;
+				len = periods[dep] - temp.range[dep].first ;
 				len += (end - temp.range[dep - 1].first) * temp.range[dep].second;
 			}
 			int wid = 1;
@@ -2596,7 +2701,7 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 			{
 				for (int i = periods.size() - 1; i > location; i--)
 				{
-					wid *= temp.range[1].second;
+					wid *= temp.range[i].second;
 				}
 				len += wid;
 				wid = 1;
@@ -2606,18 +2711,18 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 			if ("" == temp.arr_val[len])
 			{
 				cout << "line: " << ctx->getStart()->getLine() << "    The elements has no value" << endl;
-				/* return; */
+				/*return; */
 			}
 			table t(a.name, a.type, temp.arr_val[len]);
 			if ("real" == a.type)
 			{
 				auto index_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
 				auto index_1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
-				auto addr_0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getFloatTy(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, index_0});
+				auto addr_0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getDoubleTy(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, index_0});
 				double real = atof(temp.arr_val[len].c_str());
-				t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
-				auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
-				semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getFloatTy(*semantics::context), addr_0), t.all);
+				t.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
+				auto value1 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), real);
+				semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), addr_0), t.all);
 				semantics::stack_st.insert_table(t);
 			}
 			else if ("integer" == a.type || "boolean" == a.type)
@@ -2673,8 +2778,8 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 
 			table t(a.name, a.type, a_name);
 			double real = atof(a_name.c_str());
-			t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
-			auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
+			t.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
+			auto value1 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), real);
 			semantics::builder->CreateStore(value1, t.all);
 			semantics::stack_st.insert_table(t);
 		}
@@ -2692,6 +2797,7 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 			/* 传进来的是变量 */
 			if (!a.pass_value)
 			{
+				
 				/* 传值参数，需要新建符号表 */
 				table &temp2 = semantics::stack_st.locate_table(a_name);
 				if ("err" == temp2.type || (temp2.is_arg))
@@ -2709,17 +2815,17 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 				table t(a.name, a.type, temp2.value);
 				if ("integer" == a.type || "boolean" == a.type)
 				{
-					int integer = atoi(a_name.c_str());
+					//int integer = atoi(a_name.c_str());
 					t.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
 					// auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), integer);
 					semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), temp2.all), t.all);
 				}
 				else if ("real" == a.type)
 				{
-					double real = atof(a_name.c_str());
-					t.all = semantics::builder->CreateAlloca(llvm::Type::getFloatTy(*semantics::context), nullptr);
-					// auto value1 = llvm::ConstantInt::get(llvm::Type::getFloatTy(*semantics::context), real);
-					semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getFloatTy(*semantics::context), temp2.all), t.all);
+					//double real = atof(a_name.c_str());
+					t.all = semantics::builder->CreateAlloca(llvm::Type::getDoubleTy(*semantics::context), nullptr);
+					// auto value1 = llvm::ConstantInt::get(llvm::Type::getDoubleTy(*semantics::context), real);
+					semantics::builder->CreateStore(semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), temp2.all), t.all);
 				}
 				else if ("char" == a.type)
 				{
@@ -2733,12 +2839,13 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 					cout << "line:" << ctx->getStart()->getLine() << "    wrong type of parameter" << endl;
 					return;
 				}
+				
 				semantics::stack_st.insert_table(t);
 			}
 			else if (a.pass_value)
 			{
 				/* 引用，需要获取真正的符号的位置 */
-				table &temp2 = semantics::stack_st.locate_table(a_name);
+				table temp2 = semantics::stack_st.locate_table(a_name);
 				if ("err" == temp2.type || temp2.is_arg)
 				{
 					cout << "line:" << ctx->getStart()->getLine() << "   variable not declared: " << a_name << endl;
@@ -2752,20 +2859,25 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 				int r = semantics::stack_st.get_location(a_name);
 
 				temp.arguments[i].location = r;
+				
 			}
 		}
 	}
 	/* 调用子函数 */
 	semanticsListener listener;
-	antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, temp.ctx);
-	semantics::exp_type.push_back(temp.type);
-	semantics::exp_value.push_back(temp.value);
-	if ("integer" == temp.type || "boolean" == temp.type)
-		semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), temp.all));
-	else if ("char" == temp.type)
-		semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context), temp.all));
-	else if ("real" == temp.type)
-		semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getFloatTy(*semantics::context), temp.all));
+	table& symbol=semantics::stack_st.locate_table(name);
+	
+	antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, symbol.ctx);
+	
+	table& symbol2=semantics::stack_st.locate_table(name);
+	semantics::exp_type.push_back(symbol2.type);
+	semantics::exp_value.push_back(symbol2.value);
+	if ("integer" == symbol2.type || "boolean" == symbol2.type)
+		semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), symbol2.all));
+	else if ("char" == symbol2.type)
+		semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context), symbol2.all));
+	else if ("real" == symbol2.type)
+		semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), symbol2.all));
 
 	// temp.value="";
 	semantics::stack_st.pop_table();
@@ -3155,7 +3267,7 @@ void semanticsListener::exitCallWriteln(PascalSParser::CallWritelnContext *ctx)
 		return;
 	std::string writeln_args = ctx->expression_list()->getText();
 	// writeln_args 的参数需要转换成 llvm 的形式，然后传递给 llvm 中保存的 printf 函数
-	int args_count = 1; // printf 至少应有一个字符串参数
+	int args_count = 1; // printf 至少应有一个字符串参数，即 printf_format
 	std::string printf_format = "";
 	// std::cout << "number: " << semantics::exp_value.size() << std::endl;
 	writeln_args.erase(0, writeln_args.find_first_not_of(" ")); // 去除前空格
@@ -3175,66 +3287,246 @@ void semanticsListener::exitCallWriteln(PascalSParser::CallWritelnContext *ctx)
 		// llvm::SmallVector<llvm::Value*, 1> printf_args;
 		std::vector<llvm::Value *> printf_args;
 		int split_pos;
-		std::string writeln_arg;
 		do
 		{
 			split_pos = writeln_args.find(',');
-			writeln_arg = writeln_args.substr(0, split_pos);		  // 提取出每个单独的参数
-			writeln_arg.erase(0, writeln_arg.find_first_not_of(" ")); // 去除前空格
-			writeln_arg.erase(writeln_arg.find_last_not_of(" ") + 1); // 去除后空格
 
-			// std::cout << writeln_arg << std::endl;
-			if ("integer" == type_of(writeln_arg) || "real" == type_of(writeln_arg))
-			{
-				// 对于数字常量，直接将其视为格式化参数的一部分
-				printf_format += writeln_arg;
-			}
-			else if ("char" == type_of(writeln_arg))
-			{
-				// 字符型常量也视为格式化参数的一部分
-				printf_format += writeln_arg[1];
-			}
-			else
-			{
-				// 除了上面三种情况外，当前的参数会被视作为一个表达式
-				// 每个表达式会使 printf 的参数增加一个，且表达式结果按序保存在 semantics::exp_value、exp_type、llvm_value 中
-				// 首先确认表达式返回的类型，添加至格式化参数中
-				if ("integer" == semantics::exp_type[args_count - 1])
-				{
-					printf_format += "%d";
-				}
-				else if ("real" == semantics::exp_type[args_count - 1])
-				{
-					printf_format += "%f";
-				}
-				else if ("char" == semantics::exp_type[args_count - 1])
-				{
-					printf_format += "%c";
-				}
-				// printf_args.push_back(semantics::llvm_value.back());
-				args_count++;
-			}
+			// 每个表达式会使 printf 的参数增加一个，且表达式结果按序保存在 semantics::exp_value、exp_type、llvm_value 中
+			args_count++;
 			writeln_args = writeln_args.substr(split_pos + 1);
 		} while (std::string::npos != split_pos);
-
-		// 将构造好的所有参数入栈
-		// 第一个是格式化参数 printf_format
-		printf_format += "\n";
-		// std::cout << printf_format << std::endl;
-		printf_args.push_back(semantics::builder->CreateGlobalStringPtr(printf_format.c_str()));
-		// 之后从 semantics::llvm_value 依次取得要入栈的值
+		// std::cout << "printf args number: " << args_count << std::endl;
+		// 计算好 write 的参数的数量后，需要将其转变为 printf 的参数
+		assert (semantics::exp_type.size() == semantics::llvm_value.size());	// 如果这个断言出错，说明exp_type和llvm_value并不是一一对应的
+		// 构造第一个参数 printf_format，它应该根据参数表达式的类型对应的格式化输出符号组成
+		int st_size = semantics::exp_type.size();
 		for (int i = 0; i < args_count - 1; i++)
 		{
-			printf_args.push_back(semantics::llvm_value[i]);
+			if ("integer" == semantics::exp_type[st_size - (args_count - 1) + i] || "boolean" == semantics::exp_type[st_size - (args_count - 1) + i])
+				printf_format += "%d";
+			else if ("char" == semantics::exp_type[st_size - (args_count - 1) + i])
+				printf_format += "%c";
+			else if ("real" == semantics::exp_type[st_size - (args_count - 1) + i])
+				printf_format += "%lf";
+		}
+		printf_format += "\n";
+		printf_args.push_back(semantics::builder->CreateGlobalStringPtr(printf_format.c_str()));
+		// 构造后续的参数
+		for (int i = 0; i < args_count - 1; i++)
+		{
+			printf_args.push_back(semantics::llvm_value[st_size - (args_count - 1) + i]);
 		}
 
-		semantics::llvm_value.clear();
-		semantics::exp_value.clear();
-		semantics::exp_type.clear();
+		// 将 vector 中的 write 参数依次出栈
+		for (int i = 0; i < args_count - 1; i++)
+		{
+			semantics::llvm_value.pop_back();
+			semantics::exp_value.pop_back();
+			semantics::exp_type.pop_back();
+		}
 
 		semantics::builder->CreateCall(semantics::mod->getFunction("printf"), printf_args);
 	}
 }
-void semanticsListener::enterIf(PascalSParser::IfContext *ctx)
+
+void semanticsListener::exitCallReadln(PascalSParser::CallReadlnContext * ctx)
 {
+	if (semantics::depth != 0)
+        return;
+
+	// std::cout << "number : " << semantics::llvm_value.size() << std::endl;
+	llvm::SmallVector<llvm::Value*, 2> scanf_args;
+	std::string varparts = ctx->variable()->id_varparts()->getText();
+    std::string id = ctx->variable()->ID()->getText();
+    if ("" == varparts)
+    {
+        // 没有 varparts 就说明这只是一个普通的变量名
+        table &symbol = semantics::stack_st.locate_table(id);
+        if (symbol.is_const || symbol.is_type || symbol.is_record || symbol.is_array || symbol.is_arg)
+        {
+            // 如果给的符号在符号表中是不可赋值的，输出报错
+            std::cerr << ctx->getStart()->getLine() << "Left value is must be modifiable" << std::endl;
+        }
+        else
+        {
+            if ("err" == symbol.type)
+            {
+                std::cerr << "Undefined variable: " << id << std::endl;
+                return;
+            }
+            else if ("integer" == symbol.type || "boolean" == symbol.type)
+            {
+                // 注意 boolean 型变量的输入也得是整数
+                scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%d"));
+            }
+            else if ("char" == symbol.type)
+            {
+                scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%c"));
+            }
+            else if ("real" == symbol.type)
+            {
+                scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%lf"));
+            }
+            else
+            {
+                std::cerr << "no support" << std::endl;
+                return;
+            }
+            scanf_args.push_back(symbol.all);
+            semantics::builder->CreateCall(semantics::mod->getFunction("scanf"), scanf_args);
+        }
+    }
+	else
+    {
+        // 若 varparts 不为空，则表示要从数组或者结构体中取值
+        if (std::string::npos != varparts.find('[') && std::string::npos != varparts.find('.'))
+        {
+            // 不能出现结构体和数组的相互嵌套
+            std::cerr << "Line " << ctx->getStart()->getLine() << ": Unsupported variable type" << std::endl;
+            return;
+        }
+        else if (std::string::npos != varparts.find('.'))
+        {
+            // 如果是结构体，就只能是单层的
+            if (varparts.find('.') != varparts.rfind('.'))
+            {
+                std::cerr << "Line " << ctx->getStart()->getLine() << ": Unsupported variable type" << std::endl;
+                return;
+            }
+            else
+            {
+                // 如果是单层结构体，要给其对应元素赋值
+                table &symbol = semantics::stack_st.locate_table(id);
+                std::string element = ctx->variable()->id_varparts()->id_varpart()->getText();
+				element = element.substr(1);
+				// std::cout << "element: " << element << std::endl;
+                if (0 == symbol.records.count(element))
+                {
+                    // 在记录型变量中找不到指定元素
+                    std::cerr << "Line " << ctx->getStart()->getLine() << ": \'" << element << "\' is not a member of \'" << id << "\'" << std::endl;
+                    return;
+                }
+                else
+                {
+                    std::string type = symbol.records[element].type;
+                    if (type == "integer" || type == "boolean")
+                        scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%d"));
+                    else if (type == "real")
+                        scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%lf"));
+                    else if (type == "char")
+                        scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%c"));
+                    else
+                    {
+                        std::cerr << "Line " << ctx->getStart()->getLine() << ": Wrong type" << std::endl;
+                        return;
+                    }
+
+                    scanf_args.push_back(symbol.records[element].all);
+                    semantics::builder->CreateCall(semantics::mod->getFunction("scanf"), scanf_args);
+                }
+            }
+        }
+		else if (std::string::npos != varparts.find('['))
+        {
+            // 仅找到 [ 的情况，说明要从数组中提取
+			/*
+			std::cout << "varparts: " << varparts << std::endl;
+            semantics::id = id; // 为了在 ArrayAccess 中做下标的类型检查，需要把 id 传递过去
+            table &symbol = semantics::stack_st.locate_table(id);
+            for (int i = 0; i < varparts.size(); i++)
+            {
+                if ('[' == varparts[i] || ']' == varparts[i])
+                    varparts[i] = ',';
+                if (',' == varparts[i] && 0 != i && ',' == varparts[i - 1])
+                    varparts[i] = ' ';
+            }
+            varparts.erase(0, 1);
+			std::cout << "varparts after handle: " << varparts << std::endl;
+            int offset = 0;
+			std::cout << semantics::llvm_value.size() << std::endl;
+			*/
+
+			// 太过复杂，暂时放弃直接对数组使用read
+			// 但是可以通过先给普通变量赋值，再赋给数组元素的方式间接读取输入
+			std::cerr << "Line " << ctx->getStart()->getLine() << ": Reading for array is not be supported temporarily" << std::endl;
+        }
+
+    }
+}
+
+void semanticsListener::print_value(std::string mes, llvm::Value* value)
+{
+	llvm::SmallVector<llvm::Value*, 2> args;
+	args.push_back(semantics::builder->CreateGlobalStringPtr(mes.c_str()));
+	args.push_back(value);
+	semantics::builder->CreateCall(semantics::mod->getFunction("printf"), args);
+}
+void semanticsListener::exitIf(PascalSParser::IfContext * ctx)
+{
+	if (semantics::depth != 0)
+		return;
+
+    semantics::builder->SetInsertPoint(semantics::mainBlock1.back());
+	semantics::mainBlock1.pop_back();
+	semantics::thenBlock.pop_back();
+	semantics::elseBlock.pop_back();
+
+}
+void semanticsListener::exitIf_condition(PascalSParser::If_conditionContext * ctx)
+{
+	if (semantics::depth != 0)
+		return;
+
+    string type = semantics::exp_type.back();
+	
+	if(type!="boolean")
+	{
+		cerr << "line:" << ctx->getStart()->getLine() << "   " << ctx->expression()->getText() << " need be boolean type" << endl;
+		return;
+	}
+	else
+	{
+		//create ifthen & else & main block
+	    table symbol = semantics::stack_st.get_var_table(0); 
+	    semantics::thenBlock.push_back(llvm::BasicBlock::Create(*semantics::context, "", symbol.function)); // ifthen block
+        semantics::elseBlock.push_back(llvm::BasicBlock::Create(*semantics::context, "", symbol.function)); // else block
+        semantics::mainBlock1.push_back(llvm::BasicBlock::Create(*semantics::context, "", symbol.function));;  // ifelse后的block
+	    //jump instruction
+        semantics::builder->CreateCondBr(semantics::llvm_value.back(), semantics::thenBlock.back(), semantics::elseBlock.back());
+	    //std::cerr << "llvm_value:" << semantics::llvm_value.back() << endl;
+	}
+	
+}
+void semanticsListener::enterThen_statement(PascalSParser::Then_statementContext * ctx)
+{
+	if (semantics::depth != 0)
+		return;
+
+	// 插入thenBlock指令
+    semantics::builder->SetInsertPoint(semantics::thenBlock.back());
+	//semantics::thenBlock.pop_back();
+    
+}
+void semanticsListener::exitThen_statement(PascalSParser::Then_statementContext * ctx)
+{
+	if (semantics::depth != 0)
+		return;
+	
+	semantics::builder->CreateBr(semantics::mainBlock1.back());  // 无条件跳转
+}
+void semanticsListener::enterElse_part(PascalSParser::Else_partContext * ctx)
+{
+	if (semantics::depth != 0)
+		return;
+
+	// 插入elseBlock指令
+    semantics::builder->SetInsertPoint(semantics::elseBlock.back());
+    //semantics::builder->CreateBr(mainBlock1);
+}
+void semanticsListener::exitElse_part(PascalSParser::Else_partContext * ctx)
+{
+	if (semantics::depth != 0)
+		return;
+	
+	semantics::builder->CreateBr(semantics::mainBlock1.back());  // 无条件跳转
 }

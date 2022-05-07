@@ -35,10 +35,11 @@ public:
     RuleParameter_lists = 24, RuleParameter_list = 25, RuleVar_parameter = 26, 
     RuleValue_parameter = 27, RuleCompound_statement = 28, RuleStatement_list = 29, 
     RuleStatement = 30, RuleVariable = 31, RuleId_varparts = 32, RuleId_varpart = 33, 
-    RuleElse_part = 34, RuleCase_body = 35, RuleBranch_list = 36, RuleBranch = 37, 
-    RuleConst_list = 38, RuleUpdown = 39, RuleCall_procedure_statement = 40, 
-    RuleExpression_list = 41, RuleExpression = 42, RuleSimple_expression = 43, 
-    RuleTerm = 44, RuleFactor = 45, RuleUnsign_const_variable = 46
+    RuleElse_part = 34, RuleThen_statement = 35, RuleIf_condition = 36, 
+    RuleCase_body = 37, RuleBranch_list = 38, RuleBranch = 39, RuleConst_list = 40, 
+    RuleUpdown = 41, RuleCall_procedure_statement = 42, RuleExpression_list = 43, 
+    RuleExpression = 44, RuleSimple_expression = 45, RuleTerm = 46, RuleFactor = 47, 
+    RuleUnsign_const_variable = 48
   };
 
   explicit PascalSParser(antlr4::TokenStream *input);
@@ -86,6 +87,8 @@ public:
   class Id_varpartsContext;
   class Id_varpartContext;
   class Else_partContext;
+  class Then_statementContext;
+  class If_conditionContext;
   class Case_bodyContext;
   class Branch_listContext;
   class BranchContext;
@@ -817,8 +820,8 @@ public:
   public:
     IfContext(StatementContext *ctx);
 
-    ExpressionContext *expression();
-    StatementContext *statement();
+    If_conditionContext *if_condition();
+    Then_statementContext *then_statement();
     Else_partContext *else_part();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -917,6 +920,32 @@ public:
   };
 
   Else_partContext* else_part();
+
+  class  Then_statementContext : public antlr4::ParserRuleContext {
+  public:
+    Then_statementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    StatementContext *statement();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  Then_statementContext* then_statement();
+
+  class  If_conditionContext : public antlr4::ParserRuleContext {
+  public:
+    If_conditionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    ExpressionContext *expression();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  If_conditionContext* if_condition();
 
   class  Case_bodyContext : public antlr4::ParserRuleContext {
   public:
@@ -1050,7 +1079,7 @@ public:
   public:
     CallReadlnContext(Call_procedure_statementContext *ctx);
 
-    antlr4::tree::TerminalNode *ID();
+    VariableContext *variable();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
   };

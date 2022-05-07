@@ -142,8 +142,8 @@ public:
    void enterCall(PascalSParser::CallContext * ctx) override{};
    void exitCall(PascalSParser::CallContext * ctx) override{};
 
-   void enterIf(PascalSParser::IfContext * ctx) override;
-   void exitIf(PascalSParser::IfContext * ctx) override{};
+   /* void enterIf(PascalSParser::IfContext * ctx) override;
+   void exitIf(PascalSParser::IfContext * ctx) override{}; */
 
    void enterCase(PascalSParser::CaseContext * ctx) override{};
    void exitCase(PascalSParser::CaseContext * ctx) override{};
@@ -172,9 +172,9 @@ public:
    void enterRecordAccess(PascalSParser::RecordAccessContext * ctx) override;
    void exitRecordAccess(PascalSParser::RecordAccessContext * ctx) override{};
 
-   void enterElse_part(PascalSParser::Else_partContext * ctx) override{};
+   /* void enterElse_part(PascalSParser::Else_partContext * ctx) override{};
    void exitElse_part(PascalSParser::Else_partContext * ctx) override{};
-
+ */
    void enterCase_body(PascalSParser::Case_bodyContext * ctx) override{};
    void exitCase_body(PascalSParser::Case_bodyContext * ctx) override{};
 
@@ -203,7 +203,7 @@ public:
    void exitCallWriteln(PascalSParser::CallWritelnContext * ctx) override;
 
    void enterCallReadln(PascalSParser::CallReadlnContext * ctx) override{};
-   void exitCallReadln(PascalSParser::CallReadlnContext * ctx) override{};
+   void exitCallReadln(PascalSParser::CallReadlnContext * ctx) override;
 
    void enterExpression_list(PascalSParser::Expression_listContext * ctx) override{};
    void exitExpression_list(PascalSParser::Expression_listContext * ctx) override{};
@@ -259,7 +259,18 @@ public:
    void visitTerminal(antlr4::tree::TerminalNode * node) override{};
    void visitErrorNode(antlr4::tree::ErrorNode * node) override{};
 
-   
+   void print_value(std::string mes, llvm::Value* value);
+
+   void enterIf(PascalSParser::IfContext * ctx) override{};
+   void exitIf(PascalSParser::IfContext * ctx) override;
+
+   void enterIf_condition(PascalSParser::If_conditionContext * ctx) override{};
+   void exitIf_condition(PascalSParser::If_conditionContext * ctx) override;
+
+   void enterThen_statement(PascalSParser::Then_statementContext * ctx) override;
+   void exitThen_statement(PascalSParser::Then_statementContext * ctx) override;
+
+   void enterElse_part(PascalSParser::Else_partContext * ctx) override;
+   void exitElse_part(PascalSParser::Else_partContext * ctx) override;
 
 };
-

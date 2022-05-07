@@ -3,15 +3,19 @@ var
 a,b,d,h:integer;
 g:boolean;
 e,f:real;
-c,a:array[1..3,2..4]of integer;
-    function p(n2:integer):integer;
-    var v:integer;
+z:char;
+c:array[1..3,2..4]of integer;
+    function p(n3:integer;n2:integer):integer;
+    {var v:integer;}
         function p1(var n1:integer):integer;
-        var m:integer;
+        {var m:integer;}
         begin
-            v:=4;
-           
-            n2:=9;
+            {v:=4;}
+            d:=7;
+            {n2:=9;}
+            writeln(n2);
+            writeln(d);
+            n1:=5;
             p1:=7;
         end;
     begin
@@ -21,16 +25,10 @@ c,a:array[1..3,2..4]of integer;
         h:=p1(a);
     end;
 begin
-a:=3;
-g:=true;
-c[1][3]:=3+a*2;
-a:=32*3+c[1][3];
 b:=1;
-d:=7;
-d:=6;
-d:=9;
-d:=p(b)*2;
-e:=2.3*p(b);
-p(b);
+c[2][4]:=3;
+p(b,a);
+writeln(a);
+
 {f:=c[1][3]*1.5;}
 end.
