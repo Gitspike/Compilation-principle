@@ -1391,6 +1391,20 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 			semantics::llvm_value.push_back(v);
 		}
 	}
+	else if("or"==addop)
+	{
+		if("integer"!=left_type||"integer"!=right_type)
+		{
+			cout<<"line: "<<ctx->getStart()->getLine()<<"    wrong type of prameters of or operation,expected integer"<<endl;
+			return;
+		}
+		semantics::exp_type.push_back("integer");
+		auto v = semantics::builder->CreateOr(left_llvm, right_llvm);
+		int r = atoi(left.c_str()) | atoi(right.c_str());
+		string result = to_string(r);
+		semantics::exp_value.push_back(result);
+		semantics::llvm_value.push_back(v);
+	}
 }
 void semanticsListener::enterMultiplyOperation(PascalSParser::MultiplyOperationContext *ctx)
 {
@@ -1560,6 +1574,34 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 			semantics::exp_value.push_back(result);
 			semantics::llvm_value.push_back(v);
 		}
+	}
+	else if("div"==mulop)
+	{
+		if("integer"!=left_type||"integer"!=right_type)
+		{
+			cout<<"line: "<<ctx->getStart()->getLine()<<"    wrong type of prameters of divide operation,expected integer"<<endl;
+			return;
+		}
+		semantics::exp_type.push_back("integer");
+		auto v = semantics::builder->CreateSDiv(left_llvm, right_llvm);
+		int r = atoi(left.c_str()) / atoi(right.c_str());
+		string result = to_string(r);
+		semantics::exp_value.push_back(result);
+		semantics::llvm_value.push_back(v);
+	}
+	else if("and"==mulop)
+	{
+		if("integer"!=left_type||"integer"!=right_type)
+		{
+			cout<<"line: "<<ctx->getStart()->getLine()<<"    wrong type of prameters of divide operation,expected integer"<<endl;
+			return;
+		}
+		semantics::exp_type.push_back("integer");
+		auto v = semantics::builder->CreateSDiv(left_llvm, right_llvm);
+		int r = atoi(left.c_str()) / atoi(right.c_str());
+		string result = to_string(r);
+		semantics::exp_value.push_back(result);
+		semantics::llvm_value.push_back(v);
 	}
 }
 void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *ctx)
@@ -2087,7 +2129,7 @@ void semanticsListener::enterRecordAccess(PascalSParser::RecordAccessContext *ct
 				auto value=semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context),re.all);
 				semantics::llvm_value.push_back(value);
 			}
-			semantics::llvm_value.push_back(re.all);
+			
 			semantics::exp_type.push_back(re.type);
 			semantics::exp_value.push_back(re.value);
 		}
