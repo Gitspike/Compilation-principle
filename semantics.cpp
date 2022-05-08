@@ -3823,6 +3823,9 @@ void semanticsListener::exitElse_part(PascalSParser::Else_partContext *ctx)
 
 void semanticsListener::enterWhile_condition(PascalSParser::While_conditionContext *ctx)
 {
+	if (semantics::depth != 0)
+        return;
+
 	table main_symbol = semantics::stack_st.get_var_table(0);
 	auto con_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
 	auto body_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
@@ -3838,16 +3841,25 @@ void semanticsListener::enterWhile_condition(PascalSParser::While_conditionConte
 
 void semanticsListener::exitWhile_condition(PascalSParser::While_conditionContext *ctx)
 {
+	if (semantics::depth != 0)
+        return;
+
 	semantics::builder->CreateCondBr(semantics::llvm_value.back(), semantics::while_body_block.back(), semantics::while_exit_block.back()); // 创建条件跳转指令
 }
 
 void semanticsListener::enterWhile_body(PascalSParser::While_bodyContext *ctx)
 {
+	if (semantics::depth != 0)
+        return;
+
 	semantics::builder->SetInsertPoint(semantics::while_body_block.back());
 }
 
 void semanticsListener::exitWhile_body(PascalSParser::While_bodyContext *ctx)
 {
+	if (semantics::depth != 0)
+        return;
+
 	semantics::builder->CreateBr(semantics::while_condition_block.back());
 	semantics::builder->SetInsertPoint(semantics::while_exit_block.back());
 	// 三个块都用完了，需要出栈
