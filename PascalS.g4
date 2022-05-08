@@ -126,11 +126,14 @@ statement
 	| call_procedure_statement										# Call
 	| 'if' if_condition 'then' then_statement else_part				# If
 	| 'case' expression 'of' case_body 'end'						# Case
-	| 'while' expression 'do' statement								# While
+	| 'while' while_condition 'do' while_body						# While
 	| 'repeat' statement_list 'untile' expression					# Repeat
 	| 'for' ID assignop expression updown expression 'do' statement	# For
 	| 																# None
 	;
+
+while_condition: expression;
+while_body: statement; 
 
 /* 变量赋值 */
 variable: ID id_varparts;

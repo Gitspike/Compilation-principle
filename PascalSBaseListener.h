@@ -172,6 +172,12 @@ public:
   virtual void enterNone(PascalSParser::NoneContext * /*ctx*/) override { }
   virtual void exitNone(PascalSParser::NoneContext * /*ctx*/) override { }
 
+  virtual void enterWhile_condition(PascalSParser::While_conditionContext * /*ctx*/) override { }
+  virtual void exitWhile_condition(PascalSParser::While_conditionContext * /*ctx*/) override { }
+
+  virtual void enterWhile_body(PascalSParser::While_bodyContext * /*ctx*/) override { }
+  virtual void exitWhile_body(PascalSParser::While_bodyContext * /*ctx*/) override { }
+
   virtual void enterVariable(PascalSParser::VariableContext * /*ctx*/) override { }
   virtual void exitVariable(PascalSParser::VariableContext * /*ctx*/) override { }
 

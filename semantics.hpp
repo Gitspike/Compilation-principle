@@ -151,6 +151,11 @@ public:
    void enterWhile(PascalSParser::WhileContext * ctx) override{};
    void exitWhile(PascalSParser::WhileContext * ctx) override{};
 
+    void enterWhile_condition(PascalSParser::While_conditionContext * ctx) override;
+    void exitWhile_condition(PascalSParser::While_conditionContext * ctx) override;
+
+    void enterWhile_body(PascalSParser::While_bodyContext * ctx) override;
+    void exitWhile_body(PascalSParser::While_bodyContext * ctx) override;
    void enterRepeat(PascalSParser::RepeatContext * ctx) override{};
    void exitRepeat(PascalSParser::RepeatContext * ctx) override{};
 

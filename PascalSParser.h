@@ -34,12 +34,12 @@ public:
     RuleSubprogram_declaration = 21, RuleSubprogram_head = 22, RuleFormal_parameter = 23, 
     RuleParameter_lists = 24, RuleParameter_list = 25, RuleVar_parameter = 26, 
     RuleValue_parameter = 27, RuleCompound_statement = 28, RuleStatement_list = 29, 
-    RuleStatement = 30, RuleVariable = 31, RuleId_varparts = 32, RuleId_varpart = 33, 
-    RuleElse_part = 34, RuleThen_statement = 35, RuleIf_condition = 36, 
-    RuleCase_body = 37, RuleBranch_list = 38, RuleBranch = 39, RuleConst_list = 40, 
-    RuleUpdown = 41, RuleCall_procedure_statement = 42, RuleExpression_list = 43, 
-    RuleExpression = 44, RuleSimple_expression = 45, RuleTerm = 46, RuleFactor = 47, 
-    RuleUnsign_const_variable = 48
+    RuleStatement = 30, RuleWhile_condition = 31, RuleWhile_body = 32, RuleVariable = 33, 
+    RuleId_varparts = 34, RuleId_varpart = 35, RuleElse_part = 36, RuleThen_statement = 37, 
+    RuleIf_condition = 38, RuleCase_body = 39, RuleBranch_list = 40, RuleBranch = 41, 
+    RuleConst_list = 42, RuleUpdown = 43, RuleCall_procedure_statement = 44, 
+    RuleExpression_list = 45, RuleExpression = 46, RuleSimple_expression = 47, 
+    RuleTerm = 48, RuleFactor = 49, RuleUnsign_const_variable = 50
   };
 
   explicit PascalSParser(antlr4::TokenStream *input);
@@ -83,6 +83,8 @@ public:
   class Compound_statementContext;
   class Statement_listContext;
   class StatementContext;
+  class While_conditionContext;
+  class While_bodyContext;
   class VariableContext;
   class Id_varpartsContext;
   class Id_varpartContext;
@@ -810,8 +812,8 @@ public:
   public:
     WhileContext(StatementContext *ctx);
 
-    ExpressionContext *expression();
-    StatementContext *statement();
+    While_conditionContext *while_condition();
+    While_bodyContext *while_body();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
   };
@@ -846,6 +848,32 @@ public:
   };
 
   StatementContext* statement();
+
+  class  While_conditionContext : public antlr4::ParserRuleContext {
+  public:
+    While_conditionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    ExpressionContext *expression();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  While_conditionContext* while_condition();
+
+  class  While_bodyContext : public antlr4::ParserRuleContext {
+  public:
+    While_bodyContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    StatementContext *statement();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  While_bodyContext* while_body();
 
   class  VariableContext : public antlr4::ParserRuleContext {
   public:

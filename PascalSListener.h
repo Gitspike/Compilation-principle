@@ -170,6 +170,12 @@ public:
   virtual void enterNone(PascalSParser::NoneContext *ctx) = 0;
   virtual void exitNone(PascalSParser::NoneContext *ctx) = 0;
 
+  virtual void enterWhile_condition(PascalSParser::While_conditionContext *ctx) = 0;
+  virtual void exitWhile_condition(PascalSParser::While_conditionContext *ctx) = 0;
+
+  virtual void enterWhile_body(PascalSParser::While_bodyContext *ctx) = 0;
+  virtual void exitWhile_body(PascalSParser::While_bodyContext *ctx) = 0;
+
   virtual void enterVariable(PascalSParser::VariableContext *ctx) = 0;
   virtual void exitVariable(PascalSParser::VariableContext *ctx) = 0;
 
