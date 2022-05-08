@@ -2969,8 +2969,8 @@ void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationCo
 		}
 		if ("char" == left_type && "char" == right_type)
 		{
-			char l = left[0];
-			char r = right[0];
+			char l = left[1];
+			char r = right[1];
 
 			if (l < r)
 			{
@@ -3003,6 +3003,7 @@ void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationCo
 		}
 		else if ("integer" == left_type || "real" == left_type || "boolean" == left_type)
 		{
+			
 			if (("integer" == left_type && "integer" == right_type) || ("boolean" == left_type && "boolean" == right_type))
 			{
 				int l = atoi(left.c_str());
@@ -3041,34 +3042,95 @@ void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationCo
 			{
 				double l = atof(left.c_str());
 				double r = atof(right.c_str());
-
 				if (l < r)
 				{
 					semantics::exp_type.push_back("boolean");
 					semantics::exp_value.push_back("1");
-					auto value = semantics::builder->CreateFCmpOLT(left_llvm, right_llvm, "<");
-					semantics::llvm_value.push_back(value);
+					
+					if("integer"==left_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOLT(IToD, right_llvm, "<");
+						semantics::llvm_value.push_back(value);
+					}
+					else if("integer"==right_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(right_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOLT(left_llvm,IToD, "<");
+						semantics::llvm_value.push_back(value);
+					}
+					else
+					{
+						auto value = semantics::builder->CreateFCmpOLT(left_llvm, right_llvm, "<");
+						semantics::llvm_value.push_back(value);
+					}
 				}
 				if (l == r && "<=" == relop)
 				{
 					semantics::exp_type.push_back("boolean");
 					semantics::exp_value.push_back("1");
-					auto value = semantics::builder->CreateFCmpOLE(left_llvm, right_llvm, "<=");
-					semantics::llvm_value.push_back(value);
+					if("integer"==left_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOLE(IToD, right_llvm, "<");
+						semantics::llvm_value.push_back(value);
+					}
+					else if("integer"==right_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(right_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOLE(left_llvm,IToD, "<");
+						semantics::llvm_value.push_back(value);
+					}
+					else
+					{
+						auto value = semantics::builder->CreateFCmpOLE(left_llvm, right_llvm, "<=");
+						semantics::llvm_value.push_back(value);
+					}
 				}
 				if (l == r && "<=" != relop)
 				{
 					semantics::exp_type.push_back("boolean");
 					semantics::exp_value.push_back("0");
-					auto value = semantics::builder->CreateFCmpOLT(left_llvm, right_llvm, "<");
-					semantics::llvm_value.push_back(value);
+					if("integer"==left_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOLT(IToD, right_llvm, "<");
+						semantics::llvm_value.push_back(value);
+					}
+					else if("integer"==right_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(right_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOLT(left_llvm,IToD, "<");
+						semantics::llvm_value.push_back(value);
+					}
+					else
+					{
+						auto value = semantics::builder->CreateFCmpOLT(left_llvm, right_llvm, "<");
+						semantics::llvm_value.push_back(value);
+					}
 				}
 				else
 				{
 					semantics::exp_type.push_back("boolean");
 					semantics::exp_value.push_back("0");
-					auto value = semantics::builder->CreateFCmpOLT(left_llvm, right_llvm, "<");
-					semantics::llvm_value.push_back(value);
+					if("integer"==left_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOLT(IToD, right_llvm, "<");
+						semantics::llvm_value.push_back(value);
+					}
+					else if("integer"==right_type)
+					{
+						
+						auto IToD=semantics::builder->CreateSIToFP(right_llvm,llvm::Type::getDoubleTy(*semantics::context));					
+						auto value = semantics::builder->CreateFCmpOLT(left_llvm,IToD);						
+						semantics::llvm_value.push_back(value);
+					}
+					else
+					{
+						auto value = semantics::builder->CreateFCmpOLT(left_llvm, right_llvm, "<");
+						semantics::llvm_value.push_back(value);
+					}
 				}
 			}
 		}
@@ -3085,21 +3147,21 @@ void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationCo
 			char l = left[0];
 			char r = right[0];
 
-			if (l < r)
+			if (l > r)
 			{
 				semantics::exp_type.push_back("boolean");
 				semantics::exp_value.push_back("1");
 				auto value = semantics::builder->CreateICmpSGT(left_llvm, right_llvm, "<");
 				semantics::llvm_value.push_back(value);
 			}
-			if (l == r && "<=" == relop)
+			if (l == r && ">=" == relop)
 			{
 				semantics::exp_type.push_back("boolean");
 				semantics::exp_value.push_back("1");
 				auto value = semantics::builder->CreateICmpSGE(left_llvm, right_llvm, "<=");
 				semantics::llvm_value.push_back(value);
 			}
-			if (l == r && "<=" != relop)
+			if (l == r && ">=" != relop)
 			{
 				semantics::exp_type.push_back("boolean");
 				semantics::exp_value.push_back("0");
@@ -3121,21 +3183,21 @@ void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationCo
 				int l = atoi(left.c_str());
 				int r = atoi(right.c_str());
 
-				if (l < r)
+				if (l > r)
 				{
 					semantics::exp_type.push_back("boolean");
 					semantics::exp_value.push_back("1");
 					auto value = semantics::builder->CreateICmpSGT(left_llvm, right_llvm, "<");
 					semantics::llvm_value.push_back(value);
 				}
-				if (l == r && "<=" == relop)
+				if (l == r && ">=" == relop)
 				{
 					semantics::exp_type.push_back("boolean");
 					semantics::exp_value.push_back("1");
 					auto value = semantics::builder->CreateICmpSGE(left_llvm, right_llvm, "<=");
 					semantics::llvm_value.push_back(value);
 				}
-				if (l == r && "<=" != relop)
+				if (l == r && ">=" != relop)
 				{
 					semantics::exp_type.push_back("boolean");
 					semantics::exp_value.push_back("0");
@@ -3155,33 +3217,95 @@ void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationCo
 				double l = atof(left.c_str());
 				double r = atof(right.c_str());
 
-				if (l < r)
+				if (l > r)
 				{
 					semantics::exp_type.push_back("boolean");
 					semantics::exp_value.push_back("1");
-					auto value = semantics::builder->CreateFCmpOGT(left_llvm, right_llvm, "<");
-					semantics::llvm_value.push_back(value);
+					if("integer"==left_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOGT(IToD, right_llvm, ">");
+						semantics::llvm_value.push_back(value);
+					}
+					else if("integer"==right_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(right_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOGT(left_llvm, IToD, ">");
+						semantics::llvm_value.push_back(value);
+					}
+					else
+					{
+						auto value = semantics::builder->CreateFCmpOGT(left_llvm, right_llvm, ">");
+						semantics::llvm_value.push_back(value);
+					}
+
 				}
-				if (l == r && "<=" == relop)
+				if (l == r && ">=" == relop)
 				{
 					semantics::exp_type.push_back("boolean");
 					semantics::exp_value.push_back("1");
-					auto value = semantics::builder->CreateFCmpOGE(left_llvm, right_llvm, "<=");
-					semantics::llvm_value.push_back(value);
+					if("integer"==left_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOGE(IToD, right_llvm, ">");
+						semantics::llvm_value.push_back(value);
+					}
+					else if("integer"==right_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(right_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOGE(left_llvm, IToD, ">");
+						semantics::llvm_value.push_back(value);
+					}
+					else
+					{
+						auto value = semantics::builder->CreateFCmpOGE(left_llvm, right_llvm, ">");
+						semantics::llvm_value.push_back(value);
+					}
+					
 				}
-				if (l == r && "<=" != relop)
+				if (l == r && ">=" != relop)
 				{
 					semantics::exp_type.push_back("boolean");
 					semantics::exp_value.push_back("0");
-					auto value = semantics::builder->CreateFCmpOGT(left_llvm, right_llvm, "<");
-					semantics::llvm_value.push_back(value);
+					if("integer"==left_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOGT(IToD, right_llvm, ">");
+						semantics::llvm_value.push_back(value);
+					}
+					else if("integer"==right_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(right_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOGT(left_llvm, IToD, ">");
+						semantics::llvm_value.push_back(value);
+					}
+					else
+					{
+						auto value = semantics::builder->CreateFCmpOGT(left_llvm, right_llvm, ">");
+						semantics::llvm_value.push_back(value);
+					}
 				}
 				else
 				{
 					semantics::exp_type.push_back("boolean");
 					semantics::exp_value.push_back("0");
-					auto value = semantics::builder->CreateFCmpOGT(left_llvm, right_llvm, "<");
-					semantics::llvm_value.push_back(value);
+					if("integer"==left_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOGT(IToD, right_llvm, ">");
+						semantics::llvm_value.push_back(value);
+					}
+					else if("integer"==right_type)
+					{
+						auto IToD=semantics::builder->CreateSIToFP(right_llvm,llvm::Type::getDoubleTy(*semantics::context));
+						auto value = semantics::builder->CreateFCmpOGT(left_llvm, IToD, ">");
+						semantics::llvm_value.push_back(value);
+					}
+					else
+					{
+						auto value = semantics::builder->CreateFCmpOGT(left_llvm, right_llvm, ">");
+						semantics::llvm_value.push_back(value);
+					}
 				}
 			}
 		}
@@ -3239,15 +3363,45 @@ void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationCo
 			{
 				semantics::exp_type.push_back("boolean");
 				semantics::exp_value.push_back("1");
-				auto value = semantics::builder->CreateFCmpOEQ(left_llvm, right_llvm, "<=");
-				semantics::llvm_value.push_back(value);
+				if("integer"==left_type)
+				{
+					auto IToD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+					auto value = semantics::builder->CreateFCmpOEQ(IToD, right_llvm, "<=");
+					semantics::llvm_value.push_back(value);	
+				}
+				else if("integer"==right_type)
+				{
+					auto IToD=semantics::builder->CreateSIToFP(right_llvm,llvm::Type::getDoubleTy(*semantics::context));
+					auto value = semantics::builder->CreateFCmpOEQ(left_llvm, IToD, "<=");
+					semantics::llvm_value.push_back(value);
+				}
+				else
+				{
+					auto value = semantics::builder->CreateFCmpOEQ(left_llvm, right_llvm, "<=");
+					semantics::llvm_value.push_back(value);
+				}
 			}
 			else
 			{
 				semantics::exp_type.push_back("boolean");
 				semantics::exp_value.push_back("0");
-				auto value = semantics::builder->CreateFCmpOEQ(left_llvm, right_llvm, "<=");
-				semantics::llvm_value.push_back(value);
+				if("integer"==left_type)
+				{
+					auto IToD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+					auto value = semantics::builder->CreateFCmpOEQ(IToD, right_llvm, "<=");
+					semantics::llvm_value.push_back(value);	
+				}
+				else if("integer"==right_type)
+				{
+					auto IToD=semantics::builder->CreateSIToFP(right_llvm,llvm::Type::getDoubleTy(*semantics::context));
+					auto value = semantics::builder->CreateFCmpOEQ(left_llvm, IToD, "<=");
+					semantics::llvm_value.push_back(value);
+				}
+				else
+				{
+					auto value = semantics::builder->CreateFCmpOEQ(left_llvm, right_llvm, "<=");
+					semantics::llvm_value.push_back(value);
+				}
 			}
 		}
 	}
@@ -3304,8 +3458,21 @@ void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationCo
 			{
 				semantics::exp_type.push_back("boolean");
 				semantics::exp_value.push_back("1");
-				auto value = semantics::builder->CreateFCmpONE(left_llvm, right_llvm, "<=");
-				semantics::llvm_value.push_back(value);
+				if("integer"==left_type)
+				{
+					auto IToD=semantics::builder->CreateSIToFP(left_llvm,llvm::Type::getDoubleTy(*semantics::context));
+					auto value = semantics::builder->CreateFCmpONE(IToD, right_llvm, "!=");
+					semantics::llvm_value.push_back(value);
+				}
+				else if("integer"==right_type)
+				{
+					auto IToD=semantics::builder->CreateSIToFP(right_llvm,llvm::Type::getDoubleTy(*semantics::context));
+					auto value = semantics::builder->CreateFCmpONE(left_llvm, IToD, "!=");
+					semantics::llvm_value.push_back(value);
+				}
+				else
+				{auto value = semantics::builder->CreateFCmpONE(left_llvm, right_llvm, "!=");
+				semantics::llvm_value.push_back(value);}
 			}
 			else
 			{
