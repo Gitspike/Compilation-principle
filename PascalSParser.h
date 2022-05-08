@@ -37,9 +37,9 @@ public:
     RuleStatement = 30, RuleWhile_condition = 31, RuleWhile_body = 32, RuleVariable = 33, 
     RuleId_varparts = 34, RuleId_varpart = 35, RuleElse_part = 36, RuleThen_statement = 37, 
     RuleIf_condition = 38, RuleCase_body = 39, RuleBranch_list = 40, RuleBranch = 41, 
-    RuleConst_list = 42, RuleUpdown = 43, RuleCall_procedure_statement = 44, 
-    RuleExpression_list = 45, RuleExpression = 46, RuleSimple_expression = 47, 
-    RuleTerm = 48, RuleFactor = 49, RuleUnsign_const_variable = 50
+    RuleConst_list = 42, RuleUpdown = 43, RuleRepeat_condition = 44, RuleRepeat_body = 45, 
+    RuleCall_procedure_statement = 46, RuleExpression_list = 47, RuleExpression = 48, 
+    RuleSimple_expression = 49, RuleTerm = 50, RuleFactor = 51, RuleUnsign_const_variable = 52
   };
 
   explicit PascalSParser(antlr4::TokenStream *input);
@@ -96,6 +96,8 @@ public:
   class BranchContext;
   class Const_listContext;
   class UpdownContext;
+  class Repeat_conditionContext;
+  class Repeat_bodyContext;
   class Call_procedure_statementContext;
   class Expression_listContext;
   class ExpressionContext;
@@ -802,8 +804,8 @@ public:
   public:
     RepeatContext(StatementContext *ctx);
 
-    Statement_listContext *statement_list();
-    ExpressionContext *expression();
+    Repeat_bodyContext *repeat_body();
+    Repeat_conditionContext *repeat_condition();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
   };
@@ -1061,6 +1063,32 @@ public:
   };
 
   UpdownContext* updown();
+
+  class  Repeat_conditionContext : public antlr4::ParserRuleContext {
+  public:
+    Repeat_conditionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    ExpressionContext *expression();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  Repeat_conditionContext* repeat_condition();
+
+  class  Repeat_bodyContext : public antlr4::ParserRuleContext {
+  public:
+    Repeat_bodyContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Statement_listContext *statement_list();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  Repeat_bodyContext* repeat_body();
 
   class  Call_procedure_statementContext : public antlr4::ParserRuleContext {
   public:

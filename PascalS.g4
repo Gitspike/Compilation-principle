@@ -127,7 +127,7 @@ statement
 	| 'if' if_condition 'then' then_statement else_part				# If
 	| 'case' expression 'of' case_body 'end'						# Case
 	| 'while' while_condition 'do' while_body						# While
-	| 'repeat' statement_list 'untile' expression					# Repeat
+	| 'repeat' repeat_body 'until' repeat_condition					# Repeat
 	| 'for' ID assignop expression updown expression 'do' statement	# For
 	| 																# None
 	;
@@ -170,6 +170,9 @@ const_list
 
 /* 循环 */
 updown: 'to' | 'downto';
+
+repeat_condition: expression;
+repeat_body: statement_list;
 
 /* 调用过程 */
 call_procedure_statement

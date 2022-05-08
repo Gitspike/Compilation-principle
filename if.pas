@@ -13,10 +13,13 @@ begin
 e[1][1][1]:=2;
 e[1][1][2]:=1;
 b:=e[1][1][2]+4;
-c:=b/0.1;
+c:=b*2.5;
 write(c);
-
+if(c>5) then
+f(b,a)
+else
+write(a);
 c:=3+b*1.2-1.5;
 write(c);
-{f(a,b);}
+
 end.

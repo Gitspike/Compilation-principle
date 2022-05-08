@@ -8,6 +8,11 @@ namespace semantics
 	int is_if;
 	vector<int> condition;	   //根据if条件设置该变量
 	vector<int> cur_condition; //通过比较该值和上面的值判断是否修改执行栈的动作
+	//完成 repeat 工作可能需要的块栈
+	vector<llvm::BasicBlock *> repeat_condition_block;
+	vector<llvm::BasicBlock *> repeat_body_block;
+	vector<llvm::BasicBlock *> repeat_exit_block;
+
 	// 完成 if 工作可能需要的块栈
 	vector<llvm::BasicBlock *> block;
 	vector<llvm::BasicBlock *> thenBlock;
@@ -3866,4 +3871,40 @@ void semanticsListener::exitWhile_body(PascalSParser::While_bodyContext *ctx)
 	semantics::while_condition_block.pop_back();
 	semantics::while_body_block.pop_back();
 	semantics::while_exit_block.pop_back();
+}
+/*repeat*/
+void semanticsListener::enterRepeat_body(PascalSParser::Repeat_bodyContext *ctx)
+{
+	table main_symbol = semantics::stack_st.get_var_table(0);
+	auto con_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
+	auto body_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
+	auto exit_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
+
+	semantics::repeat_condition_block.push_back(con_block);
+	semantics::repeat_body_block.push_back(body_block);
+	semantics::repeat_exit_block.push_back(exit_block);
+
+	semantics::builder->CreateBr(semantics::repeat_body_block.back());
+	semantics::builder->SetInsertPoint(semantics::repeat_body_block.back());
+}
+void semanticsListener::exitRepeat_body(PascalSParser::Repeat_bodyContext *ctx) 
+{
+	semantics::builder->CreateBr(semantics::repeat_condition_block.back());
+}
+void semanticsListener::enterRepeat_condition(PascalSParser::Repeat_conditionContext *ctx)
+{
+	semantics::builder->SetInsertPoint(semantics::repeat_condition_block.back());
+}
+void semanticsListener::exitRepeat_condition(PascalSParser::Repeat_conditionContext *ctx)
+{
+	semantics::builder->CreateCondBr(semantics::llvm_value.back(), semantics::repeat_exit_block.back(), semantics::repeat_body_block.back()); // 创建条件跳转指令
+}
+void semanticsListener::exitRepeat(PascalSParser::RepeatContext * ctx)
+{
+	semantics::builder->CreateBr(semantics::repeat_exit_block.back());
+	semantics::builder->SetInsertPoint(semantics::repeat_exit_block.back());
+	// 三个块都用完了，需要出栈
+	semantics::repeat_condition_block.pop_back();
+	semantics::repeat_body_block.pop_back();
+	semantics::repeat_exit_block.pop_back();
 }

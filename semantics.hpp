@@ -156,9 +156,9 @@ public:
 
     void enterWhile_body(PascalSParser::While_bodyContext * ctx) override;
     void exitWhile_body(PascalSParser::While_bodyContext * ctx) override;
-   void enterRepeat(PascalSParser::RepeatContext * ctx) override{};
+   /* void enterRepeat(PascalSParser::RepeatContext * ctx) override{};
    void exitRepeat(PascalSParser::RepeatContext * ctx) override{};
-
+ */
    void enterFor(PascalSParser::ForContext * ctx) override{};
    void exitFor(PascalSParser::ForContext * ctx) override{};
 
@@ -277,5 +277,14 @@ public:
 
    void enterElse_part(PascalSParser::Else_partContext * ctx) override;
    void exitElse_part(PascalSParser::Else_partContext * ctx) override;
+
+   void enterRepeat(PascalSParser::RepeatContext * ctx) override{};
+   void exitRepeat(PascalSParser::RepeatContext * ctx) override;
+
+   void enterRepeat_condition(PascalSParser::Repeat_conditionContext *ctx) override;
+   void exitRepeat_condition(PascalSParser::Repeat_conditionContext *ctx) override;
+
+   void enterRepeat_body(PascalSParser::Repeat_bodyContext *ctx) override;
+   void exitRepeat_body(PascalSParser::Repeat_bodyContext *ctx) override;
 
 };

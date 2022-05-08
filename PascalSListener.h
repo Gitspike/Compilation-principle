@@ -215,6 +215,12 @@ public:
   virtual void enterUpdown(PascalSParser::UpdownContext *ctx) = 0;
   virtual void exitUpdown(PascalSParser::UpdownContext *ctx) = 0;
 
+  virtual void enterRepeat_condition(PascalSParser::Repeat_conditionContext *ctx) = 0;
+  virtual void exitRepeat_condition(PascalSParser::Repeat_conditionContext *ctx) = 0;
+
+  virtual void enterRepeat_body(PascalSParser::Repeat_bodyContext *ctx) = 0;
+  virtual void exitRepeat_body(PascalSParser::Repeat_bodyContext *ctx) = 0;
+
   virtual void enterCallWithNoPara(PascalSParser::CallWithNoParaContext *ctx) = 0;
   virtual void exitCallWithNoPara(PascalSParser::CallWithNoParaContext *ctx) = 0;
 
