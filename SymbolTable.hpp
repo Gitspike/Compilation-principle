@@ -91,6 +91,8 @@ typedef struct Table
     // istd::unique_ptr<llvm::IRBuilder<>> builder;	// 符号的构造器指针
     // llvm::IRBuilder* build = NULL;
     vector<Argument> arguments; //存放子程序的参数
+	vector<std::string> args;
+	
 
     Table() {}
     /* 变量 */

@@ -83,7 +83,7 @@ public:
    void exitPeriod(PascalSParser::PeriodContext * ctx) override{};
 
    void enterVar_declarations(PascalSParser::Var_declarationsContext * ctx) override{};
-   void exitVar_declarations(PascalSParser::Var_declarationsContext * ctx) override{};
+   void exitVar_declarations(PascalSParser::Var_declarationsContext * ctx) override;
 
    void enterSingleVarDeclaration(PascalSParser::SingleVarDeclarationContext * ctx) override;
    void exitSingleVarDeclaration(PascalSParser::SingleVarDeclarationContext * ctx) override{};
@@ -124,7 +124,7 @@ public:
    void enterValue_parameter(PascalSParser::Value_parameterContext * ctx) override{};
    void exitValue_parameter(PascalSParser::Value_parameterContext * ctx) override{};
 
-   void enterCompound_statement(PascalSParser::Compound_statementContext * ctx) override{};
+   void enterCompound_statement(PascalSParser::Compound_statementContext * ctx) override;
    void exitCompound_statement(PascalSParser::Compound_statementContext * ctx) override{};
 
    void enterMultiStatement(PascalSParser::MultiStatementContext * ctx) override{};

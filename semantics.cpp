@@ -23,6 +23,10 @@ namespace semantics
 	vector<llvm::BasicBlock *> while_condition_block;
 	vector<llvm::BasicBlock *> while_body_block;
 	vector<llvm::BasicBlock *> while_exit_block;
+	
+	// 完成 llvm 函数所需要的两个栈
+	vector<llvm::BasicBlock *> body_block;
+	vector<table> function_list;
 
 	int is_while;
 	int iscall;			  //为1时处于调用阶段，constantid不入栈
@@ -116,25 +120,11 @@ void semanticsListener::enterProgram_head(PascalSParser::Program_headContext *ct
 
 	// 主程序入栈
 	semantics::stack_st.insert_table(symbol);
-
-	// 测试
-	/*
-	auto float_value = llvm::ConstantFP::get(llvm::Type::getDoubleTy(*semantics::context), 11.11);
-	print_value("float(11.11): %lf\n", float_value);
-	auto double_value = llvm::ConstantFP::get(llvm::Type::getDoubleTy(*semantics::context), 22.22);
-	print_value("double(22.22): %lf\n", double_value);
-	auto char_value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), 'a');
-	print_value("char('a'): %c\n", char_value);
-	auto int_value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 32);
-	print_value("integer(32): %d\n", int_value);
-	*/
+	semantics::function_list.push_back(symbol);
 }
 
 void semanticsListener::enterSingleConstDeclaration(PascalSParser::SingleConstDeclarationContext *ctx)
 {
-	// 若声明的深度不为0，则直接跳过语义动作
-	if (semantics::depth != 0)
-		return;
 
 	// 常量声明
 	std::string const_id = ctx->ID()->getText();
@@ -238,8 +228,6 @@ void semanticsListener::enterSingleConstDeclaration(PascalSParser::SingleConstDe
 
 void semanticsListener::enterSingleTypeDeclaration(PascalSParser::SingleTypeDeclarationContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 
 	semantics::type_declaration = 1;
 	// type 字段声明的标识符不需要实际空间，故不用调用llvm api
@@ -277,8 +265,6 @@ void semanticsListener::exitSingleTypeDeclaration(PascalSParser::SingleTypeDecla
 
 void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclarationContext *ctx)
 {
-	if (semantics::depth != 0 or semantics::type_declaration == 1)
-		return;
 
 	std::string id_list = ctx->identifier_list()->getText(); // 改变量是以逗号为分割的若干标识符
 	std::string var_type = ctx->type()->getText();
@@ -581,7 +567,13 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 
 void semanticsListener::exitProgram(PascalSParser::ProgramContext *ctx)
 {
-	semantics::builder->CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0));
+	if (0 != semantics::body_block.size() || 0 != semantics::function_list.size()) {
+        std::cerr << "body_block: " << semantics::body_block.size() << std::endl;
+        std::cerr << "function_list: " << semantics::function_list.size() << std::endl;
+    }
+    assert(0 == semantics::body_block.size() && 0 == semantics::function_list.size());
+	std::cout << "hahaha" << std::endl << "*************************" << std::endl;
+	semantics::stack_st.pint_table();
 
 	// 输出汇编文件
 	std::error_code errorCode;
@@ -599,15 +591,23 @@ void semanticsListener::exitProgram(PascalSParser::ProgramContext *ctx)
 
 void semanticsListener::exitProgram_body(PascalSParser::Program_bodyContext *ctx)
 {
-	// semantics::stack_st.pint_table();
-	if (0 != semantics::depth)
-		semantics::depth--;
+    auto last_function = semantics::function_list.back();
+    if (last_function.type == "integer")
+        semantics::builder->CreateRet(semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), last_function.all));
+    else if (last_function.type == "real")
+        semantics::builder->CreateRet(semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), last_function.all));
+    else if (last_function.type == "char")
+        semantics::builder->CreateRet(semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context), last_function.all));
+    else
+        semantics::builder->CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0));  // 所有未标明类型的，都默认>返回 0
+	std::cout << "function_list count: " << semantics::function_list.size() << std::endl;
+	std::cout << "body_block count: " << semantics::body_block.size() << std::endl;
+    semantics::function_list.pop_back();
+    semantics::body_block.pop_back();
 }
 
 void semanticsListener::enterRecord_body(PascalSParser::Record_bodyContext *ctx)
 {
-	if (1 == semantics::type_declaration)
-		return;
 
 	// 如果这不是在type字段的record，就一定是在var字段的，要将var_record开关打开
 	semantics::var_record = 1;
@@ -615,13 +615,9 @@ void semanticsListener::enterRecord_body(PascalSParser::Record_bodyContext *ctx)
 
 void semanticsListener::exitRecord_body(PascalSParser::Record_bodyContext *ctx)
 {
-	if (1 == semantics::var_record)
-		semantics::var_record = 0;
 }
 void semanticsListener::exitSubprogram_declaration(PascalSParser::Subprogram_declarationContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	table &temp = semantics::stack_st.get_top_table();
 	temp.ctx = ctx->program_body();
 }
@@ -649,26 +645,106 @@ void semanticsListener::enterProgram_body(PascalSParser::Program_bodyContext *ct
 }
 void semanticsListener::enterFunctionDeclaration(PascalSParser::FunctionDeclarationContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
-	string name = ctx->ID()->getText(); /*
-	 cout<<"DECLARE: "<<name<<endl; */
+	string name = ctx->ID()->getText(); 
+	string paras = ctx->formal_parameter()->getText();
 	string return_type = ctx->standard_type()->getText();
 	table func(name, return_type, 1, 0);
+
+	/*int para_count;	// 记录参数的个数
+	if (paras == "")
+		para_count = 0;
+	else
+	{
+		int split_pos = paras.find(";");
+		while (split_pos != std::string::npos)
+		{
+			para_count++;
+			if (split_pos + 1 < paras.length())
+				paras = paras.substr(split_pos + 1);
+			split_pos = paras.find(";");
+		}
+		para_count++;
+	}*/
+	// 将参数的类型依次入栈
+	// llvm::SmallVector<llvm::Type *, para_count> FunctionArgs;
+	std::vector<llvm::Type*> FunctionArgs;
+	paras = ctx->formal_parameter()->getText();
+	if (paras != "")
+	{
+		paras = paras.substr(0, paras.length() - 1);
+		int split_pos = paras.find(";");
+		while (split_pos != std::string::npos)
+		{
+			std::string para = paras.substr(0, split_pos);
+			std::string para_name = para.substr(0, para.find(":"));
+			func.args.push_back(para_name);
+			std::string para_type = para.substr(para.find(":") + 1);
+			if (para_type == "integer" || para_type == "boolean")
+				FunctionArgs.push_back(llvm::Type::getInt32Ty(*semantics::context));
+			else if (para_type == "char")
+				FunctionArgs.push_back(llvm::Type::getInt8Ty(*semantics::context));
+			else if (para_type == "real")
+				FunctionArgs.push_back(llvm::Type::getDoubleTy(*semantics::context));
+
+			std::cout << para_name << " *:* " << para_type << std::endl;
+
+			if (split_pos + 1 < paras.length())
+				paras = paras.substr(split_pos + 1);
+			split_pos = paras.find(";");
+		}
+		std::string para_name = paras.substr(0, paras.find(":"));
+		func.args.push_back(para_name);
+		std::string para_type = paras.substr(paras.find(":") + 1);
+		if (para_type == "integer" || para_type == "boolean")
+			FunctionArgs.push_back(llvm::Type::getInt32Ty(*semantics::context));
+		else if (para_type == "char")
+			FunctionArgs.push_back(llvm::Type::getInt8Ty(*semantics::context));
+		else if (para_type == "real")
+			FunctionArgs.push_back(llvm::Type::getDoubleTy(*semantics::context));
+
+		std::cout << para_name << " *:* " << para_type << std::endl;
+	}
+	// 生成 functionType
+	if (return_type == "integer" || return_type == "boolean")
+		func.functiontype = llvm::FunctionType::get(llvm::Type::getInt32Ty(*semantics::context), FunctionArgs, false);
+	else if (return_type == "char")
+		func.functiontype = llvm::FunctionType::get(llvm::Type::getInt8Ty(*semantics::context), FunctionArgs, false);
+	else if (return_type == "boolean")
+		func.functiontype = llvm::FunctionType::get(llvm::Type::getDoubleTy(*semantics::context), FunctionArgs, false);
+	// 生成 function
+	func.function = llvm::Function::Create(func.functiontype, llvm::GlobalValue::ExternalLinkage, name.c_str(), semantics::mod.get());
+	// 生成 block
+	func.block = llvm::BasicBlock::Create(*semantics::context, "", func.function);
+
+	// 在此处插入函数的块
+	semantics::builder->SetInsertPoint(func.block);
+
 	semantics::stack_st.insert_table(func);
+	semantics::function_list.push_back(func);
 }
+
+void semanticsListener::exitVar_declarations(PascalSParser::Var_declarationsContext * ctx)
+{
+    // 这个块应该是属于当前的 program_head 或 subprogram_head 中定义的函数
+    auto body_block = llvm::BasicBlock::Create(*semantics::context, "", semantics::function_list.back().function);
+	// std::cout << semantics::function_list.size() << std::endl;
+    semantics::body_block.push_back(body_block);
+    semantics::builder->CreateBr(body_block);
+}
+
+void semanticsListener::enterCompound_statement(PascalSParser::Compound_statementContext * ctx)
+{
+    semantics::builder->SetInsertPoint(semantics::body_block.back());
+}
+
 void semanticsListener::enterProcedureDeclaration(PascalSParser::ProcedureDeclarationContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	string name = ctx->ID()->getText();
 	table func(name, "", 0, 1);
 	semantics::stack_st.insert_table(func);
 }
 void semanticsListener::enterVarPara(PascalSParser::VarParaContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	semantics::pass = true;
 	table &temp = semantics::stack_st.get_top_table();
 
@@ -694,16 +770,10 @@ void semanticsListener::enterVarPara(PascalSParser::VarParaContext *ctx)
 }
 void semanticsListener::exitVarPara(PascalSParser::VarParaContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	semantics::pass = false;
 }
 void semanticsListener::enterValuePara(PascalSParser::ValueParaContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
-	if (semantics::pass)
-		return;
 	table &temp = semantics::stack_st.get_top_table();
 
 	string para_type = ctx->value_parameter()->standard_type()->getText();
@@ -728,8 +798,6 @@ void semanticsListener::enterValuePara(PascalSParser::ValueParaContext *ctx)
 }
 void semanticsListener::enterAssign(PascalSParser::AssignContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	semantics::is_assign = 1;
 	string var_name = ctx->variable()->ID()->getText();
 	table &temp = semantics::stack_st.locate_table(var_name);
@@ -747,8 +815,6 @@ void semanticsListener::enterAssign(PascalSParser::AssignContext *ctx)
 }
 void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	string var_name = ctx->variable()->ID()->getText();
 	table &temp = semantics::stack_st.locate_table(var_name);
 	/* 普通变量的赋值 */
@@ -1270,15 +1336,11 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 }
 void semanticsListener::enterAddOperation(PascalSParser::AddOperationContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	int end = semantics::exp_value.size();
 	semantics::index.push_back(end);
 }
 void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	string addop = ctx->addop()->getText();
 
 	string right = semantics::exp_value.back();
@@ -1417,15 +1479,11 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 }
 void semanticsListener::enterMultiplyOperation(PascalSParser::MultiplyOperationContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	int end = semantics::exp_value.size();
 	semantics::index.push_back(end);
 }
 void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 
 	string mulop = ctx->mulop()->getText();
 
@@ -1613,10 +1671,6 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 }
 void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
-	if (1 == semantics::iscall)
-		return;
 
 	string id = ctx->ID()->getText();
 	if ("true" == id || "false" == id)
@@ -1729,8 +1783,6 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 
 void semanticsListener::exitUnsignConstNumber(PascalSParser::UnsignConstNumberContext *ctx)
 {
-	if (semantics::depth != 0 || 1 == semantics::iscall)
-		return;
 
 	string number = ctx->NUMBER()->getText();
 	semantics::exp_value.push_back(number);
@@ -1752,8 +1804,6 @@ void semanticsListener::exitUnsignConstNumber(PascalSParser::UnsignConstNumberCo
 
 void semanticsListener::exitUnsignConstChar(PascalSParser::UnsignConstCharContext *ctx)
 {
-	if (semantics::depth != 0 || 1 == semantics::iscall)
-		return;
 
 	semantics::exp_value.push_back(ctx->CONST_CHAR()->getText());
 	semantics::exp_type.push_back("char");
@@ -1763,8 +1813,6 @@ void semanticsListener::exitUnsignConstChar(PascalSParser::UnsignConstCharContex
 /* 'not'运算 */
 void semanticsListener::exitReverseFactor(PascalSParser::ReverseFactorContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 
 	if ("real" == semantics::exp_type.back())
 	{
@@ -1805,20 +1853,14 @@ void semanticsListener::exitReverseFactor(PascalSParser::ReverseFactorContext *c
 }
 void semanticsListener::enterFactorVariable(PascalSParser::FactorVariableContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	semantics::is_assign = 2;
 }
 void semanticsListener::exitFactorVariable(PascalSParser::FactorVariableContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	semantics::is_assign = 1;
 }
 void semanticsListener::enterVariable(PascalSParser::VariableContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	string name = ctx->ID()->getText();
 	table &temp = semantics::stack_st.locate_table(name);
 	if ("err" == temp.type)
@@ -1844,8 +1886,6 @@ void semanticsListener::exitVariable(PascalSParser::VariableContext *ctx)
 }
 void semanticsListener::enterArrayAccess(PascalSParser::ArrayAccessContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	/* 检查数组下标是否合法 */
 	table &temp = semantics::stack_st.locate_table(semantics::id);
 	string ran = ctx->expression_list()->getText();
@@ -1898,31 +1938,21 @@ void semanticsListener::enterArrayAccess(PascalSParser::ArrayAccessContext *ctx)
 }
 void semanticsListener::exitArrayAccess(PascalSParser::ArrayAccessContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	/* 检查数组下标是否合法 */
 	semantics::is_array_access = false;
 }
 void semanticsListener::enterId_varparts(PascalSParser::Id_varpartsContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	table &temp = semantics::stack_st.locate_table(semantics::id);
-	if (!temp.is_array || 1 == semantics::iscall)
-		return;
 	semantics::id_varparts_num++;
 	// cout << "now: " << semantics::id_varparts_num << endl;
 }
 /* 处理完一个数组，初始化数据 */
 void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 {
-	if (semantics::depth != 0 || 1 == semantics::iscall)
-		return;
 	table &temp = semantics::stack_st.locate_table(semantics::id);
 	/* if (temp.name == ctx->parent->children[0]->getText())
 		semantics::cur_range = 0; */
-	if (!temp.is_array)
-		return;
 	semantics::id_varparts_num--;
 	int ran = semantics::cur_range;
 	if (0 == semantics::id_varparts_num)
@@ -2081,8 +2111,6 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 }
 void semanticsListener::enterRecordAccess(PascalSParser::RecordAccessContext *ctx)
 {
-	if (semantics::depth != 0 || 1 == semantics::iscall)
-		return;
 	if (semantics::is_assign == 1)
 	{
 		table &temp = semantics::stack_st.locate_table(semantics::id);
@@ -2146,8 +2174,6 @@ void semanticsListener::enterRecordAccess(PascalSParser::RecordAccessContext *ct
 }
 void semanticsListener::exitNegativeTerm(PascalSParser::NegativeTermContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	string t = semantics::exp_type.back();
 	string v = semantics::exp_value.back();
 	llvm::Value *llvm_v = semantics::llvm_value.back();
@@ -2192,8 +2218,6 @@ void semanticsListener::exitNegativeTerm(PascalSParser::NegativeTermContext *ctx
 }
 void semanticsListener::exitCallWithNoPara(PascalSParser::CallWithNoParaContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	string name = ctx->ID()->getText();
 	table &temp = semantics::stack_st.locate_table(name);
 	if ("err" == temp.type)
@@ -2202,21 +2226,26 @@ void semanticsListener::exitCallWithNoPara(PascalSParser::CallWithNoParaContext 
 
 		return;
 	}
+	
+	if (!temp.is_func && !temp.is_proc)
+    {
+        // 进入当前函数的表达式必须是可调用的对象(函数或过程)
+        std::cerr << ctx->ID()->getText() << " is not a function or procedure" << std::endl;
+        return;
+    }
+
+	std::vector<llvm::Value*> args_act; // 要调用函数的实际参数
+    semantics::builder->CreateCall(temp.function, args_act);
+
 	semantics::stack_st.update_top_table();
-	semanticsListener listener;
-	antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, temp.ctx);
 	semantics::stack_st.pop_table();
 }
 void semanticsListener::enterCallWithPara(PascalSParser::CallWithParaContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	semantics::iscall = 1;
 }
 void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	semantics::iscall = 0;
 	semantics::stack_st.update_top_table();
 	string lists = ctx->expression_list()->getText();
@@ -2570,14 +2599,10 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 }
 void semanticsListener::enterFactorReturn(PascalSParser::FactorReturnContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	semantics::iscall = 1;
 }
 void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	semantics::iscall = 0;
 	semantics::stack_st.update_top_table();
 	string lists = ctx->expression_list()->getText();
@@ -2943,8 +2968,6 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 }
 void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	string relop = ctx->relop()->getText();
 
 	string right = semantics::exp_value.back();
@@ -3559,8 +3582,6 @@ void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationCo
 }
 void semanticsListener::exitCallWriteln(PascalSParser::CallWritelnContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 	std::string writeln_args = ctx->expression_list()->getText();
 
 	// writeln_args 的参数需要转换成 llvm 的形式，然后传递给 llvm 中保存的 printf 函数
@@ -3629,8 +3650,6 @@ void semanticsListener::exitCallWriteln(PascalSParser::CallWritelnContext *ctx)
 
 void semanticsListener::exitCallReadln(PascalSParser::CallReadlnContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 
 	// std::cout << "number : " << semantics::llvm_value.size() << std::endl;
 	llvm::SmallVector<llvm::Value *, 2> scanf_args;
@@ -3760,8 +3779,6 @@ void semanticsListener::print_value(std::string mes, llvm::Value *value)
 }
 void semanticsListener::exitIf(PascalSParser::IfContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 
 	semantics::builder->SetInsertPoint(semantics::mainBlock1.back());
 	semantics::mainBlock1.pop_back();
@@ -3770,8 +3787,6 @@ void semanticsListener::exitIf(PascalSParser::IfContext *ctx)
 }
 void semanticsListener::exitIf_condition(PascalSParser::If_conditionContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 
 	string type = semantics::exp_type.back();
 
@@ -3784,9 +3799,9 @@ void semanticsListener::exitIf_condition(PascalSParser::If_conditionContext *ctx
 	{
 		// create ifthen & else & main block
 		table symbol = semantics::stack_st.get_var_table(0);
-		semantics::thenBlock.push_back(llvm::BasicBlock::Create(*semantics::context, "", symbol.function)); // ifthen block
-		semantics::elseBlock.push_back(llvm::BasicBlock::Create(*semantics::context, "", symbol.function)); // else block
-		semantics::mainBlock1.push_back(llvm::BasicBlock::Create(*semantics::context, "", symbol.function));
+		semantics::thenBlock.push_back(llvm::BasicBlock::Create(*semantics::context, "", semantics::function_list.back().function)); // ifthen block
+		semantics::elseBlock.push_back(llvm::BasicBlock::Create(*semantics::context, "", semantics::function_list.back().function)); // else block
+		semantics::mainBlock1.push_back(llvm::BasicBlock::Create(*semantics::context, "", semantics::function_list.back().function));
 		; // ifelse后的block
 		  // jump instruction
 		semantics::builder->CreateCondBr(semantics::llvm_value.back(), semantics::thenBlock.back(), semantics::elseBlock.back());
@@ -3795,8 +3810,6 @@ void semanticsListener::exitIf_condition(PascalSParser::If_conditionContext *ctx
 }
 void semanticsListener::enterThen_statement(PascalSParser::Then_statementContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 
 	// 插入thenBlock指令
 	semantics::builder->SetInsertPoint(semantics::thenBlock.back());
@@ -3804,15 +3817,11 @@ void semanticsListener::enterThen_statement(PascalSParser::Then_statementContext
 }
 void semanticsListener::exitThen_statement(PascalSParser::Then_statementContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 
 	semantics::builder->CreateBr(semantics::mainBlock1.back()); // 无条件跳转
 }
 void semanticsListener::enterElse_part(PascalSParser::Else_partContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 
 	// 插入elseBlock指令
 	semantics::builder->SetInsertPoint(semantics::elseBlock.back());
@@ -3820,21 +3829,17 @@ void semanticsListener::enterElse_part(PascalSParser::Else_partContext *ctx)
 }
 void semanticsListener::exitElse_part(PascalSParser::Else_partContext *ctx)
 {
-	if (semantics::depth != 0)
-		return;
 
 	semantics::builder->CreateBr(semantics::mainBlock1.back()); // 无条件跳转
 }
 
 void semanticsListener::enterWhile_condition(PascalSParser::While_conditionContext *ctx)
 {
-	if (semantics::depth != 0)
-        return;
 
 	table main_symbol = semantics::stack_st.get_var_table(0);
-	auto con_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
-	auto body_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
-	auto exit_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
+	auto con_block = llvm::BasicBlock::Create(*semantics::context, "", semantics::function_list.back().function);
+	auto body_block = llvm::BasicBlock::Create(*semantics::context, "", semantics::function_list.back().function);
+	auto exit_block = llvm::BasicBlock::Create(*semantics::context, "", semantics::function_list.back().function);
 
 	semantics::while_condition_block.push_back(con_block);
 	semantics::while_body_block.push_back(body_block);
@@ -3846,24 +3851,18 @@ void semanticsListener::enterWhile_condition(PascalSParser::While_conditionConte
 
 void semanticsListener::exitWhile_condition(PascalSParser::While_conditionContext *ctx)
 {
-	if (semantics::depth != 0)
-        return;
 
 	semantics::builder->CreateCondBr(semantics::llvm_value.back(), semantics::while_body_block.back(), semantics::while_exit_block.back()); // 创建条件跳转指令
 }
 
 void semanticsListener::enterWhile_body(PascalSParser::While_bodyContext *ctx)
 {
-	if (semantics::depth != 0)
-        return;
 
 	semantics::builder->SetInsertPoint(semantics::while_body_block.back());
 }
 
 void semanticsListener::exitWhile_body(PascalSParser::While_bodyContext *ctx)
 {
-	if (semantics::depth != 0)
-        return;
 
 	semantics::builder->CreateBr(semantics::while_condition_block.back());
 	semantics::builder->SetInsertPoint(semantics::while_exit_block.back());
@@ -3876,9 +3875,9 @@ void semanticsListener::exitWhile_body(PascalSParser::While_bodyContext *ctx)
 void semanticsListener::enterRepeat_body(PascalSParser::Repeat_bodyContext *ctx)
 {
 	table main_symbol = semantics::stack_st.get_var_table(0);
-	auto con_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
-	auto body_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
-	auto exit_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
+	auto con_block = llvm::BasicBlock::Create(*semantics::context, "", semantics::function_list.back().function);
+	auto body_block = llvm::BasicBlock::Create(*semantics::context, "", semantics::function_list.back().function);
+	auto exit_block = llvm::BasicBlock::Create(*semantics::context, "", semantics::function_list.back().function);
 
 	semantics::repeat_condition_block.push_back(con_block);
 	semantics::repeat_body_block.push_back(body_block);
