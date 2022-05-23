@@ -650,23 +650,8 @@ void semanticsListener::enterFunctionDeclaration(PascalSParser::FunctionDeclarat
 	string return_type = ctx->standard_type()->getText();
 	table func(name, return_type, 1, 0);
 
-	/*int para_count;	// 记录参数的个数
-	if (paras == "")
-		para_count = 0;
-	else
-	{
-		int split_pos = paras.find(";");
-		while (split_pos != std::string::npos)
-		{
-			para_count++;
-			if (split_pos + 1 < paras.length())
-				paras = paras.substr(split_pos + 1);
-			split_pos = paras.find(";");
-		}
-		para_count++;
-	}*/
 	// 将参数的类型依次入栈
-	// llvm::SmallVector<llvm::Type *, para_count> FunctionArgs;
+	/*
 	std::vector<llvm::Type*> FunctionArgs;
 	paras = ctx->formal_parameter()->getText();
 	if (paras != "")
@@ -717,7 +702,15 @@ void semanticsListener::enterFunctionDeclaration(PascalSParser::FunctionDeclarat
 	func.block = llvm::BasicBlock::Create(*semantics::context, "", func.function);
 
 	// 在此处插入函数的块
-	semantics::builder->SetInsertPoint(func.block);
+	semantics::builder->SetInsertPoint(func.block);*/
+	
+
+	llvm::SmallVector<llvm::Type *, 0> FunctionArgs;
+    func.functiontype = llvm::FunctionType::get(llvm::Type::getInt32Ty(*semantics::context), FunctionArgs, false);
+    func.function = llvm::Function::Create(func.functiontype, llvm::GlobalValue::ExternalLinkage, name.c_str(), semantics::mod.get());
+    func.block = llvm::BasicBlock::Create(*semantics::context, "", func.function);
+    semantics::builder->SetInsertPoint(func.block);
+
 
 	semantics::stack_st.insert_table(func);
 	semantics::function_list.push_back(func);
@@ -740,11 +733,26 @@ void semanticsListener::enterCompound_statement(PascalSParser::Compound_statemen
 void semanticsListener::enterProcedureDeclaration(PascalSParser::ProcedureDeclarationContext *ctx)
 {
 	string name = ctx->ID()->getText();
-	table func(name, "", 0, 1);
+    table func(name, "", 0, 1);
+
+    // 先假设所有的函数和过程都没有参数
+    llvm::SmallVector<llvm::Type *, 0> FunctionArgs;
+    func.functiontype = llvm::FunctionType::get(llvm::Type::getInt32Ty(*semantics::context), FunctionArgs, false);
+    func.function = llvm::Function::Create(func.functiontype, llvm::GlobalValue::ExternalLinkage, name.c_str(), semantics::mod.get());
+    func.block = llvm::BasicBlock::Create(*semantics::context, "", func.function);
+    semantics::builder->SetInsertPoint(func.block);
+
+    semantics::stack_st.insert_table(func);
+    semantics::function_list.push_back(func);
+	return;
+
+	//string name = ctx->ID()->getText();
+	//table func(name, "", 0, 1);
 	semantics::stack_st.insert_table(func);
 }
 void semanticsListener::enterVarPara(PascalSParser::VarParaContext *ctx)
 {
+
 	semantics::pass = true;
 	table &temp = semantics::stack_st.get_top_table();
 
@@ -798,6 +806,7 @@ void semanticsListener::enterValuePara(PascalSParser::ValueParaContext *ctx)
 }
 void semanticsListener::enterAssign(PascalSParser::AssignContext *ctx)
 {
+	/*
 	semantics::is_assign = 1;
 	string var_name = ctx->variable()->ID()->getText();
 	table &temp = semantics::stack_st.locate_table(var_name);
@@ -812,9 +821,11 @@ void semanticsListener::enterAssign(PascalSParser::AssignContext *ctx)
 		cout << "Line: " << ctx->variable()->getStart()->getLine() << "  cannot change the value of the constant " << var_name << endl;
 		return;
 	}
+	*/
 }
 void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 {
+	return;	
 	string var_name = ctx->variable()->ID()->getText();
 	table &temp = semantics::stack_st.locate_table(var_name);
 	/* 普通变量的赋值 */
@@ -1333,14 +1344,18 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 		/* string id_var = ctx->variable()->id_varparts()->getText();
 		cout << id_var << endl; */
 	}
+
 }
 void semanticsListener::enterAddOperation(PascalSParser::AddOperationContext *ctx)
 {
+	/*
 	int end = semantics::exp_value.size();
 	semantics::index.push_back(end);
+	*/
 }
 void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx)
 {
+	return;
 	string addop = ctx->addop()->getText();
 
 	string right = semantics::exp_value.back();
@@ -1479,12 +1494,14 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 }
 void semanticsListener::enterMultiplyOperation(PascalSParser::MultiplyOperationContext *ctx)
 {
+	/*
 	int end = semantics::exp_value.size();
 	semantics::index.push_back(end);
+	*/
 }
 void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationContext *ctx)
 {
-
+	return;
 	string mulop = ctx->mulop()->getText();
 
 	string right = semantics::exp_value.back();
@@ -1671,7 +1688,7 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 }
 void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *ctx)
 {
-
+	return;	
 	string id = ctx->ID()->getText();
 	if ("true" == id || "false" == id)
 	{
@@ -1779,11 +1796,12 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 			return;
 		}
 	}
+	
 }
 
 void semanticsListener::exitUnsignConstNumber(PascalSParser::UnsignConstNumberContext *ctx)
 {
-
+	/*
 	string number = ctx->NUMBER()->getText();
 	semantics::exp_value.push_back(number);
 	// cout<<"Hii"
@@ -1800,20 +1818,22 @@ void semanticsListener::exitUnsignConstNumber(PascalSParser::UnsignConstNumberCo
 		int value = atoi(number.c_str());
 		semantics::llvm_value.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), value));
 	}
+	*/
 }
 
 void semanticsListener::exitUnsignConstChar(PascalSParser::UnsignConstCharContext *ctx)
 {
-
+	/*
 	semantics::exp_value.push_back(ctx->CONST_CHAR()->getText());
 	semantics::exp_type.push_back("char");
 	semantics::llvm_value.push_back(llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), ctx->CONST_CHAR()->getText()[1]));
+	*/
 }
 
 /* 'not'运算 */
 void semanticsListener::exitReverseFactor(PascalSParser::ReverseFactorContext *ctx)
 {
-
+	/*
 	if ("real" == semantics::exp_type.back())
 	{
 		cout << "line:" << ctx->getStart()->getLine() << " Cannot perform 'not' operation on variable of type 'real'\n";
@@ -1850,17 +1870,19 @@ void semanticsListener::exitReverseFactor(PascalSParser::ReverseFactorContext *c
 		semantics::llvm_value.pop_back();
 		semantics::llvm_value.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), var));
 	}
+	*/
 }
 void semanticsListener::enterFactorVariable(PascalSParser::FactorVariableContext *ctx)
 {
-	semantics::is_assign = 2;
+	//semantics::is_assign = 2;
 }
 void semanticsListener::exitFactorVariable(PascalSParser::FactorVariableContext *ctx)
 {
-	semantics::is_assign = 1;
+	//semantics::is_assign = 1;
 }
 void semanticsListener::enterVariable(PascalSParser::VariableContext *ctx)
 {
+	/*
 	string name = ctx->ID()->getText();
 	table &temp = semantics::stack_st.locate_table(name);
 	if ("err" == temp.type)
@@ -1879,6 +1901,7 @@ void semanticsListener::enterVariable(PascalSParser::VariableContext *ctx)
 		}
 		// cout<<"here"<<endl;
 	}
+	*/
 }
 void semanticsListener::exitVariable(PascalSParser::VariableContext *ctx)
 {
@@ -1886,7 +1909,8 @@ void semanticsListener::exitVariable(PascalSParser::VariableContext *ctx)
 }
 void semanticsListener::enterArrayAccess(PascalSParser::ArrayAccessContext *ctx)
 {
-	/* 检查数组下标是否合法 */
+	return;
+	// 检查数组下标是否合法
 	table &temp = semantics::stack_st.locate_table(semantics::id);
 	string ran = ctx->expression_list()->getText();
 	/* if (ran.find('.') != string::npos)
@@ -1935,14 +1959,17 @@ void semanticsListener::enterArrayAccess(PascalSParser::ArrayAccessContext *ctx)
 	} */
 
 	// cout<<"array here"<<endl
+	
 }
 void semanticsListener::exitArrayAccess(PascalSParser::ArrayAccessContext *ctx)
 {
+	return;
 	/* 检查数组下标是否合法 */
 	semantics::is_array_access = false;
 }
 void semanticsListener::enterId_varparts(PascalSParser::Id_varpartsContext *ctx)
 {
+	return;
 	table &temp = semantics::stack_st.locate_table(semantics::id);
 	semantics::id_varparts_num++;
 	// cout << "now: " << semantics::id_varparts_num << endl;
@@ -1950,6 +1977,7 @@ void semanticsListener::enterId_varparts(PascalSParser::Id_varpartsContext *ctx)
 /* 处理完一个数组，初始化数据 */
 void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 {
+	return;
 	table &temp = semantics::stack_st.locate_table(semantics::id);
 	/* if (temp.name == ctx->parent->children[0]->getText())
 		semantics::cur_range = 0; */
@@ -2111,6 +2139,7 @@ void semanticsListener::exitId_varparts(PascalSParser::Id_varpartsContext *ctx)
 }
 void semanticsListener::enterRecordAccess(PascalSParser::RecordAccessContext *ctx)
 {
+	return;
 	if (semantics::is_assign == 1)
 	{
 		table &temp = semantics::stack_st.locate_table(semantics::id);
@@ -2174,6 +2203,7 @@ void semanticsListener::enterRecordAccess(PascalSParser::RecordAccessContext *ct
 }
 void semanticsListener::exitNegativeTerm(PascalSParser::NegativeTermContext *ctx)
 {
+	return;
 	string t = semantics::exp_type.back();
 	string v = semantics::exp_value.back();
 	llvm::Value *llvm_v = semantics::llvm_value.back();
@@ -2216,7 +2246,7 @@ void semanticsListener::exitNegativeTerm(PascalSParser::NegativeTermContext *ctx
 		return;
 	}
 }
-void semanticsListener::exitCallWithNoPara(PascalSParser::CallWithNoParaContext *ctx)
+void semanticsListener::enterCallWithNoPara(PascalSParser::CallWithNoParaContext *ctx)
 {
 	string name = ctx->ID()->getText();
 	table &temp = semantics::stack_st.locate_table(name);
@@ -2237,8 +2267,8 @@ void semanticsListener::exitCallWithNoPara(PascalSParser::CallWithNoParaContext 
 	std::vector<llvm::Value*> args_act; // 要调用函数的实际参数
     semantics::builder->CreateCall(temp.function, args_act);
 
-	semantics::stack_st.update_top_table();
-	semantics::stack_st.pop_table();
+	// semantics::stack_st.update_top_table();
+	// semantics::stack_st.pop_table();
 }
 void semanticsListener::enterCallWithPara(PascalSParser::CallWithParaContext *ctx)
 {
@@ -2246,6 +2276,7 @@ void semanticsListener::enterCallWithPara(PascalSParser::CallWithParaContext *ct
 }
 void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx)
 {
+	return;
 	semantics::iscall = 0;
 	semantics::stack_st.update_top_table();
 	string lists = ctx->expression_list()->getText();
@@ -2603,6 +2634,7 @@ void semanticsListener::enterFactorReturn(PascalSParser::FactorReturnContext *ct
 }
 void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx)
 {
+	return;
 	semantics::iscall = 0;
 	semantics::stack_st.update_top_table();
 	string lists = ctx->expression_list()->getText();
@@ -2968,6 +3000,7 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 }
 void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationContext *ctx)
 {
+	return;
 	string relop = ctx->relop()->getText();
 
 	string right = semantics::exp_value.back();
@@ -3583,6 +3616,12 @@ void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationCo
 void semanticsListener::exitCallWriteln(PascalSParser::CallWritelnContext *ctx)
 {
 	std::string writeln_args = ctx->expression_list()->getText();
+
+	// 在本测试中，CallWriteln 中的 expression_list 仅当作一个普通的整型常量
+    auto value_write = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(writeln_args.c_str()));
+    semantics::llvm_value.push_back(value_write);
+    semantics::exp_type.push_back("integer");
+    semantics::exp_value.push_back(writeln_args);
 
 	// writeln_args 的参数需要转换成 llvm 的形式，然后传递给 llvm 中保存的 printf 函数
 	int args_count = 1; // printf 至少应有一个字符串参数，即 printf_format

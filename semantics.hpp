@@ -198,8 +198,8 @@ public:
    void enterUpdown(PascalSParser::UpdownContext * ctx) override{};
    void exitUpdown(PascalSParser::UpdownContext * ctx) override{};
 
-   void enterCallWithNoPara(PascalSParser::CallWithNoParaContext * ctx) override{};
-   void exitCallWithNoPara(PascalSParser::CallWithNoParaContext * ctx) override;
+   void enterCallWithNoPara(PascalSParser::CallWithNoParaContext * ctx) override;
+   void exitCallWithNoPara(PascalSParser::CallWithNoParaContext * ctx) override{};
 
    void enterCallWithPara(PascalSParser::CallWithParaContext * ctx) override;
    void exitCallWithPara(PascalSParser::CallWithParaContext * ctx) override;
