@@ -169,8 +169,9 @@ void semanticsListener::enterSingleConstDeclaration(PascalSParser::SingleConstDe
 	}
 	else if ("id" == type)
 	{
+		// if (const_value[0] == '+' || const_value[0] == '-')
 		// 当类型为id时，实际上需要将符号表中的指定符号中的属性复制一份过来
-		auto target_symbol = semantics::stack_st.locate_table(const_value);
+		table& target_symbol = semantics::stack_st.locate_table(const_value);
 		if ("err" == target_symbol.type)
 		{
 			// 返回的符号类型是err时表示没有找到该符号
@@ -572,7 +573,7 @@ void semanticsListener::exitProgram(PascalSParser::ProgramContext *ctx)
         std::cerr << "function_list: " << semantics::function_list.size() << std::endl;
     }
     assert(0 == semantics::body_block.size() && 0 == semantics::function_list.size());
-	semantics::stack_st.pint_table();
+	// semantics::stack_st.pint_table();
 
 	// 输出汇编文件
 	std::error_code errorCode;
@@ -612,8 +613,8 @@ void semanticsListener::exitProgram_body(PascalSParser::Program_bodyContext *ctx
         semantics::builder->CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0));  // 所有未标明类型的，都默认>返回 0
 
 	// semantics::builder->CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0));
-	std::cout << "function_list count: " << semantics::function_list.size() << std::endl;
-	std::cout << "body_block count: " << semantics::body_block.size() << std::endl;
+	// std::cout << "function_list count: " << semantics::function_list.size() << std::endl;
+	// std::cout << "body_block count: " << semantics::body_block.size() << std::endl;
     semantics::function_list.pop_back();
     semantics::body_block.pop_back();
 }
@@ -667,7 +668,7 @@ void semanticsListener::enterFunctionDeclaration(PascalSParser::FunctionDeclarat
 	paras = ctx->formal_parameter()->getText();
 	if (paras != "")
 	{
-		paras = paras.substr(1	, paras.length() - 1);	// 先去掉参数左右两边的括号
+		paras = paras.substr(1	, paras.length() - 2);	// 先去掉参数左右两边的括号
 		int split_pos = paras.find(";");
 		while (split_pos != std::string::npos)
 		{
@@ -682,7 +683,7 @@ void semanticsListener::enterFunctionDeclaration(PascalSParser::FunctionDeclarat
 			else if (para_type == "real")
 				FunctionArgs.push_back(llvm::Type::getDoubleTy(*semantics::context));
 
-			std::cout << para_name << " *:* " << para_type << std::endl;
+			// std::cout << para_name << " *:* " << para_type << std::endl;
 
 			if (split_pos + 1 < paras.length())
 				paras = paras.substr(split_pos + 1);
@@ -698,7 +699,7 @@ void semanticsListener::enterFunctionDeclaration(PascalSParser::FunctionDeclarat
 		else if (para_type == "real")
 			FunctionArgs.push_back(llvm::Type::getDoubleTy(*semantics::context));
 
-		std::cout << para_name << " *:* " << para_type << std::endl;
+		// std::cout << para_name << " *:* " << para_type << std::endl;
 	}
 	// 生成 functionType
 	
@@ -752,7 +753,7 @@ void semanticsListener::enterProcedureDeclaration(PascalSParser::ProcedureDeclar
     paras = ctx->formal_parameter()->getText();
     if (paras != "")
     {
-        paras = paras.substr(0, paras.length() - 1);
+        paras = paras.substr(1, paras.length() - 2);
         int split_pos = paras.find(";");
         while (split_pos != std::string::npos)
         {
@@ -767,7 +768,7 @@ void semanticsListener::enterProcedureDeclaration(PascalSParser::ProcedureDeclar
             else if (para_type == "real")
                 FunctionArgs.push_back(llvm::Type::getDoubleTy(*semantics::context));
 
-            std::cout << para_name << " *:* " << para_type << std::endl;
+            // std::cout << para_name << " *:* " << para_type << std::endl;
 
             if (split_pos + 1 < paras.length())
                 paras = paras.substr(split_pos + 1);
@@ -783,7 +784,7 @@ void semanticsListener::enterProcedureDeclaration(PascalSParser::ProcedureDeclar
         else if (para_type == "real")
 			FunctionArgs.push_back(llvm::Type::getDoubleTy(*semantics::context));
 
-        std::cout << para_name << " *:* " << para_type << std::endl;
+        // std::cout << para_name << " *:* " << para_type << std::endl;
     }
     // 生成 functionType，但是 procedure 没有返回值，所以这里直接用 int 做代替，没有实际意义
     func.functiontype = llvm::FunctionType::get(llvm::Type::getInt32Ty(*semantics::context), FunctionArgs, false);
@@ -855,6 +856,30 @@ void semanticsListener::enterAssign(PascalSParser::AssignContext *ctx)
 {
 	semantics::is_assign = 1;
 	string var_name = ctx->variable()->ID()->getText();
+	
+	// 首先从当前函数的参数列表中查找是否有该变量
+	auto cur_function = semantics::function_list.back();
+	int count = 0;
+	for(count = 0; count < cur_function.args.size(); count++)
+	{
+		if (var_name == cur_function.args[count])
+			break;
+	}
+	
+	if (count != cur_function.args.size())
+	{
+		// 从参数列表中找到了该变量，说明是可以赋值的，不输出错误信息并退出该函数
+		/*
+		auto args = cur_function.function->arg_begin();  // 获取sum的参数
+		auto arg_value = args + count;
+		std::cout << "args count = " << count << std::endl;
+		semantics::llvm_value.push_back(arg_value);
+		semantics::exp_value.push_back("0");            // 随便放个值进去吧
+		semantics::exp_type.push_back("integer");   // 假装所有参数都是integer吧
+		*/
+		return;
+	}
+
 	table &temp = semantics::stack_st.locate_table(var_name);
 	if ("err" == temp.type)
 	{
@@ -875,6 +900,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 	/* 普通变量的赋值 */
 	if (0 == ctx->variable()->id_varparts()->getText().size())
 	{
+		
 		/* 非函数的赋值 */
 		if (!temp.is_func && !temp.is_proc)
 		{
@@ -960,7 +986,6 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 				{
 					if (NULL == temp.all)
 					{
-						std::cout << "han shu fan hui di zhi shi null" << std::endl;
 						temp.all = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
 					}
 					/* real型可以兼容integer */
@@ -1751,6 +1776,29 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 	/* 变量或者函数 */
 	else
 	{
+		// 首先从当前函数的参数列表中查找是否有该变量
+		auto cur_function = semantics::function_list.back();
+		int count = 0;
+		for(count = 0; count < cur_function.args.size(); count++)
+		{
+			if (id == cur_function.args[count])
+				break;
+		}
+
+		if (count != cur_function.args.size())
+		{
+			// 从参数列表中找到了该变量，且是第 count 个参数
+			auto args = cur_function.function->arg_begin();  // 获取sum的参数
+			auto arg_value = args + count;
+			// std::cout << "args count = " << count << std::endl;
+			semantics::llvm_value.push_back(arg_value);
+			semantics::exp_value.push_back("0");			// 随便放个值进去吧
+			semantics::exp_type.push_back("integer");	// 假装所有参数都是integer吧
+
+			return;
+		}
+			
+
 		table &temp = semantics::stack_st.locate_table(id);
 		if (temp.type == "err")
 		{
@@ -2651,9 +2699,9 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 	}
 	/* 调用子函数 */
 	table &symbol = semantics::stack_st.locate_table(name);
-	semanticsListener listener;
-	antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, symbol.ctx);
-	/*
+	// semanticsListener listener;
+	// antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, symbol.ctx);
+	
 	std::vector<llvm::Value*> args_act; // 要调用函数的实际参数要从 semantics::llvm_value 中取
 	if (symbol.args.size() > semantics::llvm_value.size())
 	{
@@ -2665,8 +2713,8 @@ void semanticsListener::exitCallWithPara(PascalSParser::CallWithParaContext *ctx
 	{
 		args_act.push_back(semantics::llvm_value[semantics::llvm_value.size() - symbol.args.size() + i]);
 	}
-	auto ret_value = semantics::builder->CreateCall(temp.function, args_act);
-	*/
+	auto ret_value = semantics::builder->CreateCall(symbol.function, args_act);
+	
 	semantics::stack_st.pop_table();
 }
 void semanticsListener::enterFactorReturn(PascalSParser::FactorReturnContext *ctx)
@@ -3020,21 +3068,36 @@ void semanticsListener::exitFactorReturn(PascalSParser::FactorReturnContext *ctx
 		}
 	}
 	/* 调用子函数 */
-	semanticsListener listener;
+	// semanticsListener listener;
 	table &symbol = semantics::stack_st.locate_table(name);
 
-	antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, symbol.ctx);
+	// antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, symbol.ctx);
+	
+	std::vector<llvm::Value*> args_act; // 要调用函数的实际参数要从 semantics::llvm_value 中取
+    if (symbol.args.size() > semantics::llvm_value.size())
+    {
+        std::cerr << "Line: " << ctx->getStart()->getLine() << " expected " << symbol.args.size() << " arguments but " << semantics::llvm_value.size() << " given" << std::endl;
+        return;
+    }
 
+    for (int i = 0; i < symbol.args.size(); i++)
+    {
+        args_act.push_back(semantics::llvm_value[semantics::llvm_value.size() - symbol.args.size() + i]);
+    }
+    auto ret_value = semantics::builder->CreateCall(symbol.function, args_act);
+
+	semantics::llvm_value.push_back(ret_value);
 	table &symbol2 = semantics::stack_st.locate_table(name);
 	semantics::exp_type.push_back(symbol2.type);
 	semantics::exp_value.push_back(symbol2.value);
+	/*
 	if ("integer" == symbol2.type || "boolean" == symbol2.type)
 		semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), symbol2.all));
 	else if ("char" == symbol2.type)
 		semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context), symbol2.all));
 	else if ("real" == symbol2.type)
 		semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), symbol2.all));
-
+	*/
 	// temp.value="";
 	semantics::stack_st.pop_table();
 }
@@ -3908,7 +3971,7 @@ void semanticsListener::enterWhile_condition(PascalSParser::While_conditionConte
 {
 
 	table main_symbol = semantics::stack_st.get_var_table(0);
-	std::cout << "enter while condition: " << semantics::function_list.back().name << std::endl; 
+	//std::cout << "enter while condition: " << semantics::function_list.back().name << std::endl; 
 	
 	auto con_block = llvm::BasicBlock::Create(*semantics::context, "", semantics::function_list.back().function);
 	auto body_block = llvm::BasicBlock::Create(*semantics::context, "", semantics::function_list.back().function);
