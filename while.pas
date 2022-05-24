@@ -1,12 +1,11 @@
 program main(input);
 var
-i,max:integer;
+a:integer;
 begin
-        i:=0;
-        read(max);
-        while max>=i do
-        begin
-                write(i);
-                i:=i+1;
-        end;
+        a:=0;
+        while a<5 do
+		begin
+				write(a);
+                a:=a+1
+		end;
 end.

@@ -35,6 +35,9 @@ public:
   virtual void enterProgram_body(PascalSParser::Program_bodyContext *ctx) = 0;
   virtual void exitProgram_body(PascalSParser::Program_bodyContext *ctx) = 0;
 
+  virtual void enterBody_compound_statement(PascalSParser::Body_compound_statementContext *ctx) = 0;
+  virtual void exitBody_compound_statement(PascalSParser::Body_compound_statementContext *ctx) = 0;
+
   virtual void enterMultiMainArg(PascalSParser::MultiMainArgContext *ctx) = 0;
   virtual void exitMultiMainArg(PascalSParser::MultiMainArgContext *ctx) = 0;
 

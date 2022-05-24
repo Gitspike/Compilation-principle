@@ -26,20 +26,21 @@ public:
 
   enum {
     RuleAssignop = 0, RuleRelop = 1, RuleAddop = 2, RuleMulop = 3, RuleProgram = 4, 
-    RuleProgram_head = 5, RuleProgram_body = 6, RuleIdentifier_list = 7, 
-    RuleConst_declarations = 8, RuleConst_declaration = 9, RuleConst_variable = 10, 
-    RuleType_declarations = 11, RuleType_declaration = 12, RuleType = 13, 
-    RuleStandard_type = 14, RuleRecord_body = 15, RulePeriods = 16, RulePeriod = 17, 
-    RuleVar_declarations = 18, RuleVar_declaration = 19, RuleSubprogram_declarations = 20, 
-    RuleSubprogram_declaration = 21, RuleSubprogram_head = 22, RuleFormal_parameter = 23, 
-    RuleParameter_lists = 24, RuleParameter_list = 25, RuleVar_parameter = 26, 
-    RuleValue_parameter = 27, RuleCompound_statement = 28, RuleStatement_list = 29, 
-    RuleStatement = 30, RuleWhile_condition = 31, RuleWhile_body = 32, RuleVariable = 33, 
-    RuleId_varparts = 34, RuleId_varpart = 35, RuleElse_part = 36, RuleThen_statement = 37, 
-    RuleIf_condition = 38, RuleCase_body = 39, RuleBranch_list = 40, RuleBranch = 41, 
-    RuleConst_list = 42, RuleUpdown = 43, RuleRepeat_condition = 44, RuleRepeat_body = 45, 
-    RuleCall_procedure_statement = 46, RuleExpression_list = 47, RuleExpression = 48, 
-    RuleSimple_expression = 49, RuleTerm = 50, RuleFactor = 51, RuleUnsign_const_variable = 52
+    RuleProgram_head = 5, RuleProgram_body = 6, RuleBody_compound_statement = 7, 
+    RuleIdentifier_list = 8, RuleConst_declarations = 9, RuleConst_declaration = 10, 
+    RuleConst_variable = 11, RuleType_declarations = 12, RuleType_declaration = 13, 
+    RuleType = 14, RuleStandard_type = 15, RuleRecord_body = 16, RulePeriods = 17, 
+    RulePeriod = 18, RuleVar_declarations = 19, RuleVar_declaration = 20, 
+    RuleSubprogram_declarations = 21, RuleSubprogram_declaration = 22, RuleSubprogram_head = 23, 
+    RuleFormal_parameter = 24, RuleParameter_lists = 25, RuleParameter_list = 26, 
+    RuleVar_parameter = 27, RuleValue_parameter = 28, RuleCompound_statement = 29, 
+    RuleStatement_list = 30, RuleStatement = 31, RuleWhile_condition = 32, 
+    RuleWhile_body = 33, RuleVariable = 34, RuleId_varparts = 35, RuleId_varpart = 36, 
+    RuleElse_part = 37, RuleThen_statement = 38, RuleIf_condition = 39, 
+    RuleCase_body = 40, RuleBranch_list = 41, RuleBranch = 42, RuleConst_list = 43, 
+    RuleUpdown = 44, RuleRepeat_condition = 45, RuleRepeat_body = 46, RuleCall_procedure_statement = 47, 
+    RuleExpression_list = 48, RuleExpression = 49, RuleSimple_expression = 50, 
+    RuleTerm = 51, RuleFactor = 52, RuleUnsign_const_variable = 53
   };
 
   explicit PascalSParser(antlr4::TokenStream *input);
@@ -59,6 +60,7 @@ public:
   class ProgramContext;
   class Program_headContext;
   class Program_bodyContext;
+  class Body_compound_statementContext;
   class Identifier_listContext;
   class Const_declarationsContext;
   class Const_declarationContext;
@@ -190,7 +192,7 @@ public:
     Type_declarationsContext *type_declarations();
     Var_declarationsContext *var_declarations();
     Subprogram_declarationsContext *subprogram_declarations();
-    Compound_statementContext *compound_statement();
+    Body_compound_statementContext *body_compound_statement();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -198,6 +200,19 @@ public:
   };
 
   Program_bodyContext* program_body();
+
+  class  Body_compound_statementContext : public antlr4::ParserRuleContext {
+  public:
+    Body_compound_statementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    Compound_statementContext *compound_statement();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  Body_compound_statementContext* body_compound_statement();
 
   class  Identifier_listContext : public antlr4::ParserRuleContext {
   public:

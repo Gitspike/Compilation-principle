@@ -124,8 +124,11 @@ public:
    void enterValue_parameter(PascalSParser::Value_parameterContext * ctx) override{};
    void exitValue_parameter(PascalSParser::Value_parameterContext * ctx) override{};
 
-   void enterCompound_statement(PascalSParser::Compound_statementContext * ctx) override;
+   void enterCompound_statement(PascalSParser::Compound_statementContext * ctx) override{};
    void exitCompound_statement(PascalSParser::Compound_statementContext * ctx) override{};
+
+   void enterBody_compound_statement(PascalSParser::Body_compound_statementContext * ctx) override;
+   void exitBody_compound_statement(PascalSParser::Body_compound_statementContext * ctx) override{};
 
    void enterMultiStatement(PascalSParser::MultiStatementContext * ctx) override{};
    void exitMultiStatement(PascalSParser::MultiStatementContext * ctx) override{};

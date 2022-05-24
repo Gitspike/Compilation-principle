@@ -28,7 +28,8 @@ program_body:
 	type_declarations
 	var_declarations
 	subprogram_declarations
-	compound_statement; // 定义程序体内容，按顺序分别是 const type var 子程序 主程序
+	body_compound_statement; // 定义程序体内容，按顺序分别是 const type var 子程序 主程序
+body_compound_statement: compound_statement;
 identifier_list
 	: identifier_list ',' ID	# MultiMainArg
 	| ID						# MainArg

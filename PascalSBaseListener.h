@@ -37,6 +37,9 @@ public:
   virtual void enterProgram_body(PascalSParser::Program_bodyContext * /*ctx*/) override { }
   virtual void exitProgram_body(PascalSParser::Program_bodyContext * /*ctx*/) override { }
 
+  virtual void enterBody_compound_statement(PascalSParser::Body_compound_statementContext * /*ctx*/) override { }
+  virtual void exitBody_compound_statement(PascalSParser::Body_compound_statementContext * /*ctx*/) override { }
+
   virtual void enterMultiMainArg(PascalSParser::MultiMainArgContext * /*ctx*/) override { }
   virtual void exitMultiMainArg(PascalSParser::MultiMainArgContext * /*ctx*/) override { }
 
