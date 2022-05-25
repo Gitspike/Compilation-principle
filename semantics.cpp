@@ -49,7 +49,7 @@ namespace semantics
 	vector<string> r_type;
 	bool pass;			  //为1时是引用传参
 	bool is_array_access; //为true时表示当前数字或字符是数组下标，不需要入exp_value的栈
-
+	string cur_func;
 	// struct record_elements r_ele;
 
 }
@@ -66,6 +66,7 @@ void semanticsListener::enterProgram(PascalSParser::ProgramContext *ctx)
 	semantics::pass = false;
 	semantics::id_varparts_num = 0;
 	semantics::is_array_access = false;
+	semantics::cur_func="";
 	// 初始化llvm以及设置目标机器
 	llvm::InitializeNativeTarget();
 	llvm::InitializeAllTargetInfos();
@@ -651,8 +652,7 @@ void semanticsListener::enterFunctionDeclaration(PascalSParser::FunctionDeclarat
 {
 	if (semantics::depth != 0)
 		return;
-	string name = ctx->ID()->getText(); /*
-	 cout<<"DECLARE: "<<name<<endl; */
+	string name = ctx->ID()->getText();
 	string return_type = ctx->standard_type()->getText();
 	table func(name, return_type, 1, 0);
 	semantics::stack_st.insert_table(func);
@@ -759,6 +759,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 		{
 			if (temp.type != semantics::exp_type.back() && !("real" == temp.type && "integer" == semantics::exp_type.back()))
 			{
+
 				cout << "Line:" << ctx->variable()->getStart()->getLine() << "    Cannot assign values to variables of different types" << endl;
 				semantics::exp_type.pop_back();
 				semantics::exp_value.pop_back();
@@ -1402,17 +1403,29 @@ void semanticsListener::exitAddOperation(PascalSParser::AddOperationContext *ctx
 	}
 	else if ("or" == addop)
 	{
-		if ("integer" != left_type || "integer" != right_type)
+		if("integer"==left_type&&"integer"==right_type)
 		{
-			cout << "line: " << ctx->getStart()->getLine() << "    wrong type of prameters of or operation,expected integer" << endl;
+			semantics::exp_type.push_back("integer");
+			auto v = semantics::builder->CreateOr(left_llvm, right_llvm);
+			int r = atoi(left.c_str()) or atoi(right.c_str());
+			string result = to_string(r);
+			semantics::exp_value.push_back(result);
+			semantics::llvm_value.push_back(v);
+		}
+		else if("boolean"==left_type&&"boolean"==right_type)
+		{
+			semantics::exp_type.push_back("boolean");
+			auto v = semantics::builder->CreateOr(left_llvm, right_llvm);
+			int r = atoi(left.c_str()) or atoi(right.c_str());
+			string result = to_string(r);
+			semantics::exp_value.push_back(result);
+			semantics::llvm_value.push_back(v);
+		}
+		else
+		{
+			cout << "line: " << ctx->getStart()->getLine() << "    wrong type of prameters of divide operation,expected integer" << endl;
 			return;
 		}
-		semantics::exp_type.push_back("integer");
-		auto v = semantics::builder->CreateOr(left_llvm, right_llvm);
-		int r = atoi(left.c_str()) | atoi(right.c_str());
-		string result = to_string(r);
-		semantics::exp_value.push_back(result);
-		semantics::llvm_value.push_back(v);
 	}
 }
 void semanticsListener::enterMultiplyOperation(PascalSParser::MultiplyOperationContext *ctx)
@@ -1598,17 +1611,30 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 	}
 	else if ("and" == mulop)
 	{
-		if ("integer" != left_type || "integer" != right_type)
+		
+		if("integer"==left_type&&"integer"==right_type)
 		{
-			cout << "line: " << ctx->getStart()->getLine() << "    wrong type of prameters of divide operation,expected integer" << endl;
+			semantics::exp_type.push_back("integer");
+			auto v = semantics::builder->CreateAnd(left_llvm, right_llvm);
+			int r = atoi(left.c_str()) and atoi(right.c_str());
+			string result = to_string(r);
+			semantics::exp_value.push_back(result);
+			semantics::llvm_value.push_back(v);
+		}
+		else if("boolean"==left_type&&"boolean"==right_type)
+		{
+			semantics::exp_type.push_back("boolean");
+			auto v = semantics::builder->CreateAnd(left_llvm, right_llvm);
+			int r = atoi(left.c_str()) and atoi(right.c_str());
+			string result = to_string(r);
+			semantics::exp_value.push_back(result);
+			semantics::llvm_value.push_back(v);
+		}
+		else
+		{
+			cout << "line: " << ctx->getStart()->getLine() << "    wrong type of prameters of and operation,expected integer" << endl;
 			return;
 		}
-		semantics::exp_type.push_back("integer");
-		auto v = semantics::builder->CreateSDiv(left_llvm, right_llvm);
-		int r = atoi(left.c_str()) / atoi(right.c_str());
-		string result = to_string(r);
-		semantics::exp_value.push_back(result);
-		semantics::llvm_value.push_back(v);
 	}
 }
 void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *ctx)
@@ -1683,16 +1709,68 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 		else if (temp.is_func)
 		{
 			/* 调用函数 */
-
-			semantics::stack_st.update_top_table();
-			semanticsListener listener;
-			antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, temp.ctx);
-			semantics::stack_st.pop_table();
-			semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), temp.all));
-			semantics::exp_type.push_back(temp.type);
-			semantics::exp_value.push_back(temp.value);
+			if (temp.arguments_num != 0)
+			{
+				/*用函数返回值给其他变量赋值 */
+				semantics::exp_type.push_back(temp.type);
+				semantics::exp_value.push_back(temp.value);
+				if ("integer" == temp.type || "boolean" == temp.type)
+				{
+					semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), temp.all));
+				}
+				else if ("real" == temp.type)
+				{
+					semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), temp.all));
+				}
+				else if ("char" == temp.type)
+				{
+					semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context), temp.all));
+				}
+				return;
+			}
+			else if (temp.arguments_num == 0)
+			{
+				/* 区分是调用还是赋值 */
+				if(temp.name==semantics::cur_func)
+				{
+					/* 赋值 */
+					semantics::exp_type.push_back(temp.type);
+					semantics::exp_value.push_back(temp.value);
+					if ("integer" == temp.type || "boolean" == temp.type)
+					{
+						semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), temp.all));
+					}
+					else if ("real" == temp.type)
+					{
+						semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), temp.all));
+					}
+					else if ("char" == temp.type)
+					{
+						semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context), temp.all));
+					}
+					return;
+				}
+				semantics::cur_func=temp.name;
+				semantics::stack_st.update_top_table();
+				semanticsListener listener;
+				antlr4::tree::ParseTreeWalker::DEFAULT.walk(&listener, temp.ctx);
+				semantics::stack_st.pop_table();
+				if ("integer" == temp.type || "boolean" == temp.type)
+				{
+					semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), temp.all));
+				}
+				else if ("real" == temp.type)
+				{
+					semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), temp.all));
+				}
+				else if ("char" == temp.type)
+				{
+					semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context), temp.all));
+				}
+				semantics::exp_type.push_back(temp.type);
+				semantics::exp_value.push_back(temp.value);
+			}
 		}
-
 		else if (!temp.is_func && !temp.is_proc)
 		{
 			/* 变量 */
@@ -3173,7 +3251,7 @@ void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationCo
 			}
 		}
 	}
-	else if(">="==relop)
+	else if (">=" == relop)
 	{
 		if (left_type != right_type && !(("integer" == left_type && "real" == right_type) || ("integer" == right_type && "real" == left_type)))
 		{
@@ -3208,7 +3286,7 @@ void semanticsListener::exitRelationOperation(PascalSParser::RelationOperationCo
 			semantics::llvm_value.push_back(value);
 		}
 	}
-	else if (">" == relop )
+	else if (">" == relop)
 	{
 		if (left_type != right_type && !(("integer" == left_type && "real" == right_type) || ("integer" == right_type && "real" == left_type)))
 		{
@@ -3829,7 +3907,7 @@ void semanticsListener::exitElse_part(PascalSParser::Else_partContext *ctx)
 void semanticsListener::enterWhile_condition(PascalSParser::While_conditionContext *ctx)
 {
 	if (semantics::depth != 0)
-        return;
+		return;
 
 	table main_symbol = semantics::stack_st.get_var_table(0);
 	auto con_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
@@ -3847,7 +3925,7 @@ void semanticsListener::enterWhile_condition(PascalSParser::While_conditionConte
 void semanticsListener::exitWhile_condition(PascalSParser::While_conditionContext *ctx)
 {
 	if (semantics::depth != 0)
-        return;
+		return;
 
 	semantics::builder->CreateCondBr(semantics::llvm_value.back(), semantics::while_body_block.back(), semantics::while_exit_block.back()); // 创建条件跳转指令
 }
@@ -3855,7 +3933,7 @@ void semanticsListener::exitWhile_condition(PascalSParser::While_conditionContex
 void semanticsListener::enterWhile_body(PascalSParser::While_bodyContext *ctx)
 {
 	if (semantics::depth != 0)
-        return;
+		return;
 
 	semantics::builder->SetInsertPoint(semantics::while_body_block.back());
 }
@@ -3863,7 +3941,7 @@ void semanticsListener::enterWhile_body(PascalSParser::While_bodyContext *ctx)
 void semanticsListener::exitWhile_body(PascalSParser::While_bodyContext *ctx)
 {
 	if (semantics::depth != 0)
-        return;
+		return;
 
 	semantics::builder->CreateBr(semantics::while_condition_block.back());
 	semantics::builder->SetInsertPoint(semantics::while_exit_block.back());
@@ -3887,7 +3965,7 @@ void semanticsListener::enterRepeat_body(PascalSParser::Repeat_bodyContext *ctx)
 	semantics::builder->CreateBr(semantics::repeat_body_block.back());
 	semantics::builder->SetInsertPoint(semantics::repeat_body_block.back());
 }
-void semanticsListener::exitRepeat_body(PascalSParser::Repeat_bodyContext *ctx) 
+void semanticsListener::exitRepeat_body(PascalSParser::Repeat_bodyContext *ctx)
 {
 	semantics::builder->CreateBr(semantics::repeat_condition_block.back());
 }
@@ -3899,7 +3977,7 @@ void semanticsListener::exitRepeat_condition(PascalSParser::Repeat_conditionCont
 {
 	semantics::builder->CreateCondBr(semantics::llvm_value.back(), semantics::repeat_exit_block.back(), semantics::repeat_body_block.back()); // 创建条件跳转指令
 }
-void semanticsListener::exitRepeat(PascalSParser::RepeatContext * ctx)
+void semanticsListener::exitRepeat(PascalSParser::RepeatContext *ctx)
 {
 	semantics::builder->CreateBr(semantics::repeat_exit_block.back());
 	semantics::builder->SetInsertPoint(semantics::repeat_exit_block.back());
