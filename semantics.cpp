@@ -5,6 +5,31 @@
 #include <stack>
 namespace semantics
 {
+
+	// 完成 for 工作可能需要的块栈
+	vector<llvm::BasicBlock *> for_condition_block;
+	vector<llvm::BasicBlock *> for_body_block;
+	vector<llvm::BasicBlock *> for_exit_block;
+	vector<llvm::BasicBlock *> for_to_block;
+	vector<llvm::BasicBlock *> for_downto_block;
+	vector<llvm::AllocaInst *> init_addr;
+	int is_to;
+
+	//完成 case 工作可能需要的块栈
+	vector<llvm::BasicBlock *> case_condition_block;
+	vector<llvm::BasicBlock *> case_body_block;
+	vector<llvm::BasicBlock *> case_exit_block;
+	//完成 case 工作可能需要的参数
+	vector<int> case_num;
+	int case_init_num;
+	vector<llvm::AllocaInst *> case_value;
+	llvm::Value *case_init;
+	llvm::Value *case_init2;
+	llvm::Value *case_judge;
+	llvm::AllocaInst *case_addr;
+
+	vector<llvm::Value *> addr;
+
 	int is_if;
 	int is_err;
 	vector<int> condition;	   //根据if条件设置该变量
@@ -586,6 +611,18 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 				semantics::is_err = 1;
 				cerr << "Line " << ctx->getStart()->getLine() << ": Unsupported array type" << std::endl;
 			}
+			if ("char" == array_type)
+			{
+				int len = 0;
+				for (int i = 0; i < symbol.arr_len; i++)
+				{
+					auto index01 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), 0);
+					auto index_end1 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), len);
+					auto addr01 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt8Ty(*semantics::context), symbol.arr_len), symbol.all_item.back(), {index01, index_end1});
+					auto v1 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), '\0');
+					semantics::builder->CreateStore(v1, addr01);
+				}
+			}
 			semantics::stack_st.insert_table(symbol);
 		}
 		id_list = id_list.substr(split_pos + 1); // 将处理后的id剔除出去
@@ -594,7 +631,7 @@ void semanticsListener::enterSingleVarDeclaration(PascalSParser::SingleVarDeclar
 
 void semanticsListener::exitProgram(PascalSParser::ProgramContext *ctx)
 {
-	if(1==semantics::is_err)
+	if (1 == semantics::is_err)
 		return;
 	semantics::builder->CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0));
 
@@ -774,7 +811,7 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 		/* 非函数的赋值 */
 		if (!temp.is_func && !temp.is_proc)
 		{
-			if (temp.type != semantics::exp_type.back() && !("real" == temp.type && "integer" == semantics::exp_type.back()))
+			if ((temp.type != semantics::exp_type.back() && !("real" == temp.type && "integer" == semantics::exp_type.back())) && (!temp.is_array))
 			{
 
 				semantics::is_err = 1;
@@ -832,6 +869,25 @@ void semanticsListener::exitAssign(PascalSParser::AssignContext *ctx)
 					// auto value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), b);
 					semantics::builder->CreateStore(semantics::llvm_value.back(), temp.all);
 					temp.value = semantics::exp_value.back();
+				}
+				else if ("array" == semantics::exp_type.back())
+				{
+					int size = temp.arr_len;
+					int len = 0;
+					for (int i = 0; i < size; i++)
+					{
+
+						auto index0 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), 0);
+						auto index_end = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), len);
+						auto addr0 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt8Ty(*semantics::context), temp.arr_len), semantics::llvm_value.back(), {index0, index_end});
+
+						auto index01 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), 0);
+						auto index_end1 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), len);
+						auto addr01 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt8Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index0, index_end});
+						auto v1 = semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context), addr0);
+						semantics::builder->CreateStore(v1, addr01);
+						len++;
+					}
 				}
 				semantics::llvm_value.pop_back();
 				semantics::exp_type.pop_back();
@@ -938,7 +994,8 @@ cerr<<"TYPE: "<<semantics::exp_type.back()<<"  VALUE: "<<semantics::exp_value.ba
 				semantics::is_err = 1;
 				cerr << "Line:" << ctx->variable()->getStart()->getLine() << "    Cannot assign values to variables of different types:" << loc << endl;
 				semantics::exp_type.pop_back();
-				semantics::exp_type.pop_back();
+				semantics::exp_value.pop_back();
+				semantics::llvm_value.pop_back();
 				return;
 			}
 			else
@@ -1805,7 +1862,7 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 				semantics::exp_value.push_back(temp.value);
 			}
 		}
-		else if (!temp.is_func && !temp.is_proc)
+		else if (!temp.is_func && !temp.is_proc && !temp.is_array)
 		{
 			/* 变量 */
 			if ("" == temp.value)
@@ -1830,6 +1887,19 @@ void semanticsListener::exitUnsignConstId(PascalSParser::UnsignConstIdContext *c
 					semantics::llvm_value.push_back(semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context), temp.all));
 				}
 			}
+		}
+		else if (temp.is_array)
+		{
+			if ("char" != temp.type)
+			{
+				cerr << "line:" << ctx->getStart()->getLine() << "    Can't read or write variables of this type" << endl;
+				return;
+			}
+			/* auto index01 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), 0);
+			auto index_end1 = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), 0);
+			auto addr01 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt8Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index01, index_end1}); */
+			semantics::llvm_value.push_back(temp.all_item.back());
+			semantics::exp_type.push_back("array");
 		}
 		else
 		{
@@ -2159,6 +2229,7 @@ cerr << "line: " << ctx->getStart()->getLine() << "    The elements has no value
 			auto index_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
 			auto index_1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
 			auto addr_11 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getDoubleTy(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, Len});
+			// semantics::addr.push_back(addr_11);
 			auto value = semantics::builder->CreateLoad(llvm::Type::getDoubleTy(*semantics::context), addr_11);
 			semantics::llvm_value.push_back(value);
 		}
@@ -2167,6 +2238,7 @@ cerr << "line: " << ctx->getStart()->getLine() << "    The elements has no value
 			auto index_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
 			auto index_1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
 			auto addr_11 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt8Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, Len});
+			// semantics::addr.push_back(addr_11);
 			auto value = semantics::builder->CreateLoad(llvm::Type::getInt8Ty(*semantics::context), addr_11);
 			semantics::llvm_value.push_back(value);
 		}
@@ -2176,6 +2248,7 @@ cerr << "line: " << ctx->getStart()->getLine() << "    The elements has no value
 			auto index_0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 0);
 			auto index_1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), len);
 			auto addr_11 = semantics::builder->CreateGEP(llvm::ArrayType::get(llvm::Type::getInt32Ty(*semantics::context), temp.arr_len), temp.all_item.back(), {index_0, Len});
+			// semantics::addr.push_back(addr_11);
 			auto value = semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), addr_11);
 			semantics::llvm_value.push_back(value);
 		}
@@ -3751,25 +3824,31 @@ void semanticsListener::exitCallWriteln(PascalSParser::CallWritelnContext *ctx)
 		assert(semantics::exp_type.size() == semantics::llvm_value.size()); // 如果这个断言出错，说明exp_type和llvm_value并不是一一对应的
 		// 构造第一个参数 printf_format，它应该根据参数表达式的类型对应的格式化输出符号组成
 		int st_size = semantics::exp_type.size();
-		for (int i = 0; i < args_count-1; i++)
+		for (int i = 0; i < args_count - 1; i++)
 		{
-			if ("integer" == semantics::exp_type[st_size - (args_count-1) + i] || "boolean" == semantics::exp_type[st_size - (args_count-1) + i])
+			if ("integer" == semantics::exp_type[st_size - (args_count - 1) + i] || "boolean" == semantics::exp_type[st_size - (args_count - 1) + i])
 				printf_format += "%d";
-			else if ("char" == semantics::exp_type[st_size - (args_count-1) + i])
+			else if ("char" == semantics::exp_type[st_size - (args_count - 1) + i])
+			{
+
 				printf_format += "%c";
-			else if ("real" == semantics::exp_type[st_size - (args_count-1) + i])
+			}
+			else if ("array" == semantics::exp_type[st_size - (args_count - 1) + i])
+			{
+				printf_format += "%s";
+			}
+			else if ("real" == semantics::exp_type[st_size - (args_count - 1) + i])
 				printf_format += "%lf";
 		}
 		printf_format += "\n";
 		printf_args.push_back(semantics::builder->CreateGlobalStringPtr(printf_format.c_str()));
 		// 构造后续的参数
-		for (int i = 0; i < args_count-1; i++)
+		for (int i = 0; i < args_count - 1; i++)
 		{
-			printf_args.push_back(semantics::llvm_value[st_size - (args_count-1) + i]);
+			printf_args.push_back(semantics::llvm_value[st_size - (args_count - 1) + i]);
 		}
-
 		// 将 vector 中的 write 参数依次出栈
-		for (int i = 0; i <args_count-1; i++)
+		for (int i = 0; i < args_count - 1; i++)
 		{
 			semantics::llvm_value.pop_back();
 			semantics::exp_value.pop_back();
@@ -3784,7 +3863,6 @@ void semanticsListener::exitCallReadln(PascalSParser::CallReadlnContext *ctx)
 {
 	if (semantics::depth != 0)
 		return;
-
 	llvm::SmallVector<llvm::Value *, 2> scanf_args;
 	std::string varparts = ctx->variable()->id_varparts()->getText();
 	std::string id = ctx->variable()->ID()->getText();
@@ -3792,7 +3870,7 @@ void semanticsListener::exitCallReadln(PascalSParser::CallReadlnContext *ctx)
 	{
 		// 没有 varparts 就说明这只是一个普通的变量名
 		table &symbol = semantics::stack_st.locate_table(id);
-		if (symbol.is_const || symbol.is_type || symbol.is_record || symbol.is_array || symbol.is_arg)
+		if (symbol.is_const || symbol.is_type || symbol.is_record || symbol.is_arg)
 		{
 			// 如果给的符号在符号表中是不可赋值的，输出报错
 			semantics::is_err = 1;
@@ -3813,7 +3891,13 @@ void semanticsListener::exitCallReadln(PascalSParser::CallReadlnContext *ctx)
 			}
 			else if ("char" == symbol.type)
 			{
-				scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%c"));
+				if (!symbol.is_array)
+					scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%c"));
+				else
+				{
+
+					scanf_args.push_back(semantics::builder->CreateGlobalStringPtr("%s"));
+				}
 			}
 			else if ("real" == symbol.type)
 			{
@@ -3825,7 +3909,13 @@ void semanticsListener::exitCallReadln(PascalSParser::CallReadlnContext *ctx)
 				cerr << "no support" << std::endl;
 				return;
 			}
-			scanf_args.push_back(symbol.all);
+			if (!symbol.is_array)
+				scanf_args.push_back(symbol.all);
+			else
+			{
+
+				scanf_args.push_back(symbol.all_item.back());
+			}
 			semantics::builder->CreateCall(semantics::mod->getFunction("scanf"), scanf_args);
 		}
 	}
@@ -4063,4 +4153,164 @@ void semanticsListener::exitRepeat(PascalSParser::RepeatContext *ctx)
 	semantics::repeat_condition_block.pop_back();
 	semantics::repeat_body_block.pop_back();
 	semantics::repeat_exit_block.pop_back();
+}
+/*case*/
+void semanticsListener::exitCase_condition(PascalSParser::Case_conditionContext *ctx)
+{
+	table symbol = semantics::stack_st.get_var_table(0); 
+ 	semantics::case_exit_block.push_back(llvm::BasicBlock::Create(*semantics::context, "", symbol.function));
+
+	string expr = ctx->expression()->getText();
+	string str = semantics::exp_value.back();
+	int number = atoi(str.c_str());
+	
+	semantics::case_init = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), number);
+	semantics::case_init2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), number-1);
+    semantics::case_judge = semantics::builder->CreateICmpEQ(semantics::case_init, semantics::case_init2);
+
+	semantics::case_addr = semantics::builder->CreateAlloca(llvm::Type::getInt32Ty(*semantics::context), nullptr);
+	semantics::builder->CreateStore(semantics::case_judge, semantics::case_addr);
+	semantics::case_init_num = number;
+}
+void semanticsListener::exitSingleConstList(PascalSParser::SingleConstListContext * ctx)
+{
+	string var = ctx->const_variable()->getText();
+	int number = atoi(var.c_str());
+	semantics::case_num.push_back(number);
+}
+void semanticsListener::enterCase_statement(PascalSParser::Case_statementContext *ctx)
+{
+    table symbol = semantics::stack_st.get_var_table(0); 
+ 	semantics::case_condition_block.push_back(llvm::BasicBlock::Create(*semantics::context, "", symbol.function));
+	semantics::case_body_block.push_back(llvm::BasicBlock::Create(*semantics::context, "", symbol.function));
+	
+	semantics::builder->CreateBr(semantics::case_body_block.back());
+	semantics::builder->SetInsertPoint(semantics::case_body_block.back());
+}
+void semanticsListener::exitCase_statement(PascalSParser::Case_statementContext *ctx)
+{
+	auto init = semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), semantics::case_addr);
+	
+	semantics::builder->CreateCondBr(init, semantics::case_exit_block.back(), semantics::case_condition_block.back()); 
+	semantics::builder->SetInsertPoint(semantics::case_condition_block.back());
+}
+void semanticsListener::exitCase(PascalSParser::CaseContext * ctx)
+{
+    int i;
+	for(i = 0; i < semantics::case_num.size(); i++)
+	{
+		if(semantics::case_init_num == semantics::case_num[i]) 
+		{
+			auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), semantics::case_init_num);
+	        auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), semantics::case_num[i]);
+			semantics::case_judge = semantics::builder->CreateICmpEQ(value2, value1);
+			semantics::builder->CreateStore(semantics::case_judge, semantics::case_addr);
+			break;
+		}
+	}
+	semantics::builder->CreateBr(semantics::case_body_block[i]);
+	semantics::builder->SetInsertPoint(semantics::case_exit_block.back());
+
+	// 三个块都用完了，需要出栈
+	semantics::case_exit_block.pop_back();
+	for(int j = 0; j < semantics::case_body_block.size(); j++)
+	{
+        semantics::case_condition_block.pop_back();
+	    semantics::case_body_block.pop_back();
+	}
+}
+
+/*for*/
+void semanticsListener::exitFor_init(PascalSParser::For_initContext * ctx)
+{
+	string ID = ctx->ID()->getText();
+	string expr = ctx->expression()->getText();
+	int number = atoi(expr.c_str());
+
+	table &init = semantics::stack_st.locate_table(ID);
+	semantics::init_addr.push_back(init.all);
+ 
+	auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), number);
+
+    semantics::builder->CreateStore(value1, semantics::init_addr.back());
+}
+void semanticsListener::exitUpdown(PascalSParser::UpdownContext * ctx)
+{
+    auto init = semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), semantics::init_addr.back());
+	auto value0 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);
+
+	string updown = ctx->getText();
+
+	if("to" == updown)
+	{
+        auto value = semantics::builder->CreateSub(init, value0);
+		semantics::builder->CreateStore(value, semantics::init_addr.back());
+		semantics::is_to = 1;
+	}
+	else
+	{
+		auto value = semantics::builder->CreateAdd(init, value0);
+		semantics::builder->CreateStore(value, semantics::init_addr.back());
+		semantics::is_to = 0;
+	}
+}
+void semanticsListener::enterFor_condition(PascalSParser::For_conditionContext * ctx)
+{
+	table main_symbol = semantics::stack_st.get_var_table(0);
+	auto con_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
+	auto body_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
+	auto exit_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
+	auto to_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
+	auto downto_block = llvm::BasicBlock::Create(*semantics::context, "", main_symbol.function);
+
+	semantics::for_condition_block.push_back(con_block);
+	semantics::for_body_block.push_back(body_block);
+	semantics::for_exit_block.push_back(exit_block);
+	semantics::for_to_block.push_back(to_block);
+	semantics::for_downto_block.push_back(downto_block);
+
+	semantics::builder->CreateBr(con_block);
+	semantics::builder->SetInsertPoint(con_block);
+    
+}
+void semanticsListener::exitFor_condition(PascalSParser::For_conditionContext * ctx) 
+{
+	llvm::Value *right_llvm = semantics::llvm_value.back();
+
+	auto init = semantics::builder->CreateLoad(llvm::Type::getInt32Ty(*semantics::context), semantics::init_addr.back());
+	auto value1 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 1);
+
+	auto llvm_is_to = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), semantics::is_to);
+	auto llvm_updown = semantics::builder->CreateICmpEQ(llvm_is_to, value1);
+	semantics::builder->CreateCondBr(llvm_updown, semantics::for_to_block.back(), semantics::for_downto_block.back());
+
+    semantics::builder->SetInsertPoint(semantics::for_to_block.back());
+	auto init_num = semantics::builder->CreateAdd(value1, init);
+	semantics::builder->CreateStore(init_num, semantics::init_addr.back());
+	auto value = semantics::builder->CreateICmpSLE(init_num, right_llvm, "<=");
+	semantics::builder->CreateCondBr(value, semantics::for_body_block.back(), semantics::for_exit_block.back()); 
+	
+	semantics::builder->SetInsertPoint(semantics::for_downto_block.back());
+	auto init_num2 = semantics::builder->CreateSub(init, value1);
+	semantics::builder->CreateStore(init_num2, semantics::init_addr.back());
+	right_llvm = semantics::builder->CreateSub(right_llvm, value1);
+	auto value2 = semantics::builder->CreateICmpSLE(init_num2, right_llvm, "<=");
+	semantics::builder->CreateCondBr(value2, semantics::for_exit_block.back(), semantics::for_body_block.back()); 
+}
+void semanticsListener::enterFor_body(PascalSParser::For_bodyContext * ctx)
+{
+	semantics::builder->SetInsertPoint(semantics::for_body_block.back());
+}
+void semanticsListener::exitFor_body(PascalSParser::For_bodyContext * ctx)
+{
+	semantics::builder->CreateBr(semantics::for_condition_block.back());
+	semantics::builder->SetInsertPoint(semantics::for_exit_block.back());
+
+	// 三个块都用完了，需要出栈
+	semantics::for_condition_block.pop_back();
+	semantics::for_body_block.pop_back();
+	semantics::for_exit_block.pop_back();
+	semantics::for_to_block.pop_back();
+	semantics::for_downto_block.pop_back();
+	semantics::init_addr.pop_back();
 }

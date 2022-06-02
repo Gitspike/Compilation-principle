@@ -199,6 +199,9 @@ public:
   virtual void enterIf_condition(PascalSParser::If_conditionContext * /*ctx*/) override { }
   virtual void exitIf_condition(PascalSParser::If_conditionContext * /*ctx*/) override { }
 
+  virtual void enterCase_condition(PascalSParser::Case_conditionContext * /*ctx*/) override { }
+  virtual void exitCase_condition(PascalSParser::Case_conditionContext * /*ctx*/) override { }
+
   virtual void enterCase_body(PascalSParser::Case_bodyContext * /*ctx*/) override { }
   virtual void exitCase_body(PascalSParser::Case_bodyContext * /*ctx*/) override { }
 
@@ -208,6 +211,9 @@ public:
   virtual void enterBranch(PascalSParser::BranchContext * /*ctx*/) override { }
   virtual void exitBranch(PascalSParser::BranchContext * /*ctx*/) override { }
 
+  virtual void enterCase_statement(PascalSParser::Case_statementContext * /*ctx*/) override { }
+  virtual void exitCase_statement(PascalSParser::Case_statementContext * /*ctx*/) override { }
+
   virtual void enterSingleConstList(PascalSParser::SingleConstListContext * /*ctx*/) override { }
   virtual void exitSingleConstList(PascalSParser::SingleConstListContext * /*ctx*/) override { }
 
@@ -216,6 +222,15 @@ public:
 
   virtual void enterUpdown(PascalSParser::UpdownContext * /*ctx*/) override { }
   virtual void exitUpdown(PascalSParser::UpdownContext * /*ctx*/) override { }
+
+  virtual void enterFor_body(PascalSParser::For_bodyContext * /*ctx*/) override { }
+  virtual void exitFor_body(PascalSParser::For_bodyContext * /*ctx*/) override { }
+
+  virtual void enterFor_condition(PascalSParser::For_conditionContext * /*ctx*/) override { }
+  virtual void exitFor_condition(PascalSParser::For_conditionContext * /*ctx*/) override { }
+
+  virtual void enterFor_init(PascalSParser::For_initContext * /*ctx*/) override { }
+  virtual void exitFor_init(PascalSParser::For_initContext * /*ctx*/) override { }
 
   virtual void enterRepeat_condition(PascalSParser::Repeat_conditionContext * /*ctx*/) override { }
   virtual void exitRepeat_condition(PascalSParser::Repeat_conditionContext * /*ctx*/) override { }

@@ -10,23 +10,24 @@ main:
 	subq	$16, %rsp
 	.cfi_def_cfa_offset 32
 	.cfi_offset %rbx, -16
+	movl	$100, 12(%rsp)
+	movl	$0, 4(%rsp)
 	movl	$0, 8(%rsp)
-	movl	$0, 12(%rsp)
 	leaq	.L__unnamed_1(%rip), %rdi
-	leaq	12(%rsp), %rsi
+	leaq	8(%rsp), %rsi
 	xorl	%eax, %eax
 	callq	scanf@PLT
 	leaq	.L__unnamed_2(%rip), %rbx
 	.p2align	4, 0x90
 .LBB0_1:
-	movl	12(%rsp), %eax
-	cmpl	8(%rsp), %eax
+	movl	8(%rsp), %eax
+	cmpl	4(%rsp), %eax
 	jl	.LBB0_3
-	movl	8(%rsp), %esi
+	movl	4(%rsp), %esi
 	movq	%rbx, %rdi
 	xorl	%eax, %eax
 	callq	printf@PLT
-	incl	8(%rsp)
+	incl	4(%rsp)
 	jmp	.LBB0_1
 .LBB0_3:
 	xorl	%eax, %eax

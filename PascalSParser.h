@@ -36,10 +36,12 @@ public:
     RuleValue_parameter = 27, RuleCompound_statement = 28, RuleStatement_list = 29, 
     RuleStatement = 30, RuleWhile_condition = 31, RuleWhile_body = 32, RuleVariable = 33, 
     RuleId_varparts = 34, RuleId_varpart = 35, RuleElse_part = 36, RuleThen_statement = 37, 
-    RuleIf_condition = 38, RuleCase_body = 39, RuleBranch_list = 40, RuleBranch = 41, 
-    RuleConst_list = 42, RuleUpdown = 43, RuleRepeat_condition = 44, RuleRepeat_body = 45, 
-    RuleCall_procedure_statement = 46, RuleExpression_list = 47, RuleExpression = 48, 
-    RuleSimple_expression = 49, RuleTerm = 50, RuleFactor = 51, RuleUnsign_const_variable = 52
+    RuleIf_condition = 38, RuleCase_condition = 39, RuleCase_body = 40, 
+    RuleBranch_list = 41, RuleBranch = 42, RuleCase_statement = 43, RuleConst_list = 44, 
+    RuleUpdown = 45, RuleFor_body = 46, RuleFor_condition = 47, RuleFor_init = 48, 
+    RuleRepeat_condition = 49, RuleRepeat_body = 50, RuleCall_procedure_statement = 51, 
+    RuleExpression_list = 52, RuleExpression = 53, RuleSimple_expression = 54, 
+    RuleTerm = 55, RuleFactor = 56, RuleUnsign_const_variable = 57
   };
 
   explicit PascalSParser(antlr4::TokenStream *input);
@@ -91,11 +93,16 @@ public:
   class Else_partContext;
   class Then_statementContext;
   class If_conditionContext;
+  class Case_conditionContext;
   class Case_bodyContext;
   class Branch_listContext;
   class BranchContext;
+  class Case_statementContext;
   class Const_listContext;
   class UpdownContext;
+  class For_bodyContext;
+  class For_conditionContext;
+  class For_initContext;
   class Repeat_conditionContext;
   class Repeat_bodyContext;
   class Call_procedure_statementContext;
@@ -770,12 +777,10 @@ public:
   public:
     ForContext(StatementContext *ctx);
 
-    antlr4::tree::TerminalNode *ID();
-    AssignopContext *assignop();
-    std::vector<ExpressionContext *> expression();
-    ExpressionContext* expression(size_t i);
+    For_initContext *for_init();
     UpdownContext *updown();
-    StatementContext *statement();
+    For_conditionContext *for_condition();
+    For_bodyContext *for_body();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
   };
@@ -843,7 +848,7 @@ public:
   public:
     CaseContext(StatementContext *ctx);
 
-    ExpressionContext *expression();
+    Case_conditionContext *case_condition();
     Case_bodyContext *case_body();
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -977,6 +982,19 @@ public:
 
   If_conditionContext* if_condition();
 
+  class  Case_conditionContext : public antlr4::ParserRuleContext {
+  public:
+    Case_conditionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    ExpressionContext *expression();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  Case_conditionContext* case_condition();
+
   class  Case_bodyContext : public antlr4::ParserRuleContext {
   public:
     Case_bodyContext(antlr4::ParserRuleContext *parent, size_t invokingState);
@@ -1009,7 +1027,7 @@ public:
     BranchContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     Const_listContext *const_list();
-    StatementContext *statement();
+    Case_statementContext *case_statement();
 
     virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
     virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
@@ -1017,6 +1035,19 @@ public:
   };
 
   BranchContext* branch();
+
+  class  Case_statementContext : public antlr4::ParserRuleContext {
+  public:
+    Case_statementContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    StatementContext *statement();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  Case_statementContext* case_statement();
 
   class  Const_listContext : public antlr4::ParserRuleContext {
   public:
@@ -1063,6 +1094,47 @@ public:
   };
 
   UpdownContext* updown();
+
+  class  For_bodyContext : public antlr4::ParserRuleContext {
+  public:
+    For_bodyContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    StatementContext *statement();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  For_bodyContext* for_body();
+
+  class  For_conditionContext : public antlr4::ParserRuleContext {
+  public:
+    For_conditionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    ExpressionContext *expression();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  For_conditionContext* for_condition();
+
+  class  For_initContext : public antlr4::ParserRuleContext {
+  public:
+    For_initContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *ID();
+    AssignopContext *assignop();
+    ExpressionContext *expression();
+
+    virtual void enterRule(antlr4::tree::ParseTreeListener *listener) override;
+    virtual void exitRule(antlr4::tree::ParseTreeListener *listener) override;
+   
+  };
+
+  For_initContext* for_init();
 
   class  Repeat_conditionContext : public antlr4::ParserRuleContext {
   public:

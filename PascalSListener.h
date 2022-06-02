@@ -197,6 +197,9 @@ public:
   virtual void enterIf_condition(PascalSParser::If_conditionContext *ctx) = 0;
   virtual void exitIf_condition(PascalSParser::If_conditionContext *ctx) = 0;
 
+  virtual void enterCase_condition(PascalSParser::Case_conditionContext *ctx) = 0;
+  virtual void exitCase_condition(PascalSParser::Case_conditionContext *ctx) = 0;
+
   virtual void enterCase_body(PascalSParser::Case_bodyContext *ctx) = 0;
   virtual void exitCase_body(PascalSParser::Case_bodyContext *ctx) = 0;
 
@@ -206,6 +209,9 @@ public:
   virtual void enterBranch(PascalSParser::BranchContext *ctx) = 0;
   virtual void exitBranch(PascalSParser::BranchContext *ctx) = 0;
 
+  virtual void enterCase_statement(PascalSParser::Case_statementContext *ctx) = 0;
+  virtual void exitCase_statement(PascalSParser::Case_statementContext *ctx) = 0;
+
   virtual void enterSingleConstList(PascalSParser::SingleConstListContext *ctx) = 0;
   virtual void exitSingleConstList(PascalSParser::SingleConstListContext *ctx) = 0;
 
@@ -214,6 +220,15 @@ public:
 
   virtual void enterUpdown(PascalSParser::UpdownContext *ctx) = 0;
   virtual void exitUpdown(PascalSParser::UpdownContext *ctx) = 0;
+
+  virtual void enterFor_body(PascalSParser::For_bodyContext *ctx) = 0;
+  virtual void exitFor_body(PascalSParser::For_bodyContext *ctx) = 0;
+
+  virtual void enterFor_condition(PascalSParser::For_conditionContext *ctx) = 0;
+  virtual void exitFor_condition(PascalSParser::For_conditionContext *ctx) = 0;
+
+  virtual void enterFor_init(PascalSParser::For_initContext *ctx) = 0;
+  virtual void exitFor_init(PascalSParser::For_initContext *ctx) = 0;
 
   virtual void enterRepeat_condition(PascalSParser::Repeat_conditionContext *ctx) = 0;
   virtual void exitRepeat_condition(PascalSParser::Repeat_conditionContext *ctx) = 0;
