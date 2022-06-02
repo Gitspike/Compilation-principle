@@ -85,9 +85,9 @@ main:                                   # @main
 	movq	%rax, -480(%rbp)        # 8-byte Spill
 .LBB0_4:                                # =>This Loop Header: Depth=1
                                         #     Child Loop BB0_7 Depth 2
-                                        #       Child Loop BB0_12 Depth 3
-                                        #       Child Loop BB0_17 Depth 3
-                                        #       Child Loop BB0_20 Depth 3
+                                        #       Child Loop BB0_13 Depth 3
+                                        #       Child Loop BB0_19 Depth 3
+                                        #       Child Loop BB0_22 Depth 3
 	movq	-432(%rbp), %rax        # 8-byte Reload
 	movl	(%rax), %ecx
 	cmpl	-4(%rbp), %ecx
@@ -99,12 +99,12 @@ main:                                   # @main
 .LBB0_6:
 	xorl	%eax, %eax
 	movl	%eax, -484(%rbp)        # 4-byte Spill
-	jmp	.LBB0_23
+	jmp	.LBB0_25
 .LBB0_7:                                #   Parent Loop BB0_4 Depth=1
                                         # =>  This Loop Header: Depth=2
-                                        #       Child Loop BB0_12 Depth 3
-                                        #       Child Loop BB0_17 Depth 3
-                                        #       Child Loop BB0_20 Depth 3
+                                        #       Child Loop BB0_13 Depth 3
+                                        #       Child Loop BB0_19 Depth 3
+                                        #       Child Loop BB0_22 Depth 3
 	movq	-448(%rbp), %rax        # 8-byte Reload
 	movl	(%rax), %ecx
 	movl	-4(%rbp), %edx
@@ -128,7 +128,8 @@ main:                                   # @main
 	movq	-472(%rbp), %r8         # 8-byte Reload
 	movl	%ecx, (%r8)
 	movl	(%r8), %ecx
-	cmpl	-4(%rbp), %ecx
+	movl	-4(%rbp), %r9d
+	cmpl	%r9d, %ecx
 	jg	.LBB0_10
 	jmp	.LBB0_11
 .LBB0_9:                                #   in Loop: Header=BB0_4 Depth=1
@@ -141,27 +142,31 @@ main:                                   # @main
 	movl	-4(%rbp), %eax
 	movq	-472(%rbp), %rcx        # 8-byte Reload
 	movl	%eax, (%rcx)
+	jmp	.LBB0_12
 .LBB0_11:                               #   in Loop: Header=BB0_7 Depth=2
+	jmp	.LBB0_12
+.LBB0_12:                               #   in Loop: Header=BB0_7 Depth=2
 	movq	-440(%rbp), %rax        # 8-byte Reload
 	movl	$0, (%rax)
-.LBB0_12:                               #   Parent Loop BB0_4 Depth=1
+.LBB0_13:                               #   Parent Loop BB0_4 Depth=1
                                         #     Parent Loop BB0_7 Depth=2
                                         # =>    This Inner Loop Header: Depth=3
 	movq	-448(%rbp), %rax        # 8-byte Reload
 	movl	(%rax), %ecx
 	movq	-456(%rbp), %rdx        # 8-byte Reload
-	cmpl	(%rdx), %ecx
-	setl	%sil
-	movq	-464(%rbp), %rdi        # 8-byte Reload
-	movl	(%rdi), %ecx
-	movq	-472(%rbp), %r8         # 8-byte Reload
-	cmpl	(%r8), %ecx
-	setl	%r9b
-	andb	%r9b, %sil
-	testb	$1, %sil
-	jne	.LBB0_13
-	jmp	.LBB0_14
-.LBB0_13:                               #   in Loop: Header=BB0_12 Depth=3
+	movl	(%rdx), %esi
+	cmpl	%esi, %ecx
+	setl	%dil
+	movq	-464(%rbp), %r8         # 8-byte Reload
+	movl	(%r8), %ecx
+	movq	-472(%rbp), %r9         # 8-byte Reload
+	cmpl	(%r9), %ecx
+	setl	%r10b
+	andb	%r10b, %dil
+	testb	$1, %dil
+	jne	.LBB0_14
+	jmp	.LBB0_15
+.LBB0_14:                               #   in Loop: Header=BB0_13 Depth=3
 	movq	-448(%rbp), %rax        # 8-byte Reload
 	movslq	(%rax), %rcx
 	movl	-408(%rbp,%rcx,4), %edx
@@ -169,11 +174,11 @@ main:                                   # @main
 	movl	(%rcx), %esi
 	movslq	%esi, %rdi
 	cmpl	-408(%rbp,%rdi,4), %edx
-	jl	.LBB0_15
-	jmp	.LBB0_16
-.LBB0_14:                               #   in Loop: Header=BB0_7 Depth=2
+	jl	.LBB0_16
 	jmp	.LBB0_17
-.LBB0_15:                               #   in Loop: Header=BB0_12 Depth=3
+.LBB0_15:                               #   in Loop: Header=BB0_7 Depth=2
+	jmp	.LBB0_19
+.LBB0_16:                               #   in Loop: Header=BB0_13 Depth=3
 	movq	-440(%rbp), %rax        # 8-byte Reload
 	movl	(%rax), %ecx
 	movq	-448(%rbp), %rdx        # 8-byte Reload
@@ -190,8 +195,8 @@ main:                                   # @main
 	movl	(%rdx), %ecx
 	addl	$1, %ecx
 	movl	%ecx, (%rdx)
-	jmp	.LBB0_12
-.LBB0_16:                               #   in Loop: Header=BB0_12 Depth=3
+	jmp	.LBB0_18
+.LBB0_17:                               #   in Loop: Header=BB0_13 Depth=3
 	movq	-440(%rbp), %rax        # 8-byte Reload
 	movl	(%rax), %ecx
 	movq	-464(%rbp), %rdx        # 8-byte Reload
@@ -208,16 +213,17 @@ main:                                   # @main
 	movl	(%rdx), %ecx
 	addl	$1, %ecx
 	movl	%ecx, (%rdx)
-	jmp	.LBB0_12
-.LBB0_17:                               #   Parent Loop BB0_4 Depth=1
+.LBB0_18:                               #   in Loop: Header=BB0_13 Depth=3
+	jmp	.LBB0_13
+.LBB0_19:                               #   Parent Loop BB0_4 Depth=1
                                         #     Parent Loop BB0_7 Depth=2
                                         # =>    This Inner Loop Header: Depth=3
 	movq	-448(%rbp), %rax        # 8-byte Reload
 	movl	(%rax), %ecx
 	movq	-456(%rbp), %rdx        # 8-byte Reload
 	cmpl	(%rdx), %ecx
-	jge	.LBB0_19
-# %bb.18:                               #   in Loop: Header=BB0_17 Depth=3
+	jge	.LBB0_21
+# %bb.20:                               #   in Loop: Header=BB0_19 Depth=3
 	movq	-440(%rbp), %rax        # 8-byte Reload
 	movl	(%rax), %ecx
 	movq	-448(%rbp), %rdx        # 8-byte Reload
@@ -234,16 +240,17 @@ main:                                   # @main
 	movl	(%rdx), %ecx
 	addl	$1, %ecx
 	movl	%ecx, (%rdx)
-	jmp	.LBB0_17
-.LBB0_19:                               #   in Loop: Header=BB0_7 Depth=2
-	jmp	.LBB0_20
-.LBB0_20:                               #   Parent Loop BB0_4 Depth=1
+	jmp	.LBB0_19
+.LBB0_21:                               #   in Loop: Header=BB0_7 Depth=2
+	jmp	.LBB0_22
+.LBB0_22:                               #   Parent Loop BB0_4 Depth=1
                                         #     Parent Loop BB0_7 Depth=2
                                         # =>    This Inner Loop Header: Depth=3
 	movq	-440(%rbp), %rax        # 8-byte Reload
-	cmpl	$0, (%rax)
-	jle	.LBB0_22
-# %bb.21:                               #   in Loop: Header=BB0_20 Depth=3
+	movl	(%rax), %ecx
+	cmpl	$0, %ecx
+	jle	.LBB0_24
+# %bb.23:                               #   in Loop: Header=BB0_22 Depth=3
 	movq	-464(%rbp), %rax        # 8-byte Reload
 	movl	(%rax), %ecx
 	subl	$1, %ecx
@@ -260,19 +267,19 @@ main:                                   # @main
 	movslq	%ecx, %rdi
 	movslq	%esi, %r10
 	movl	%r9d, -408(%rbp,%rdi,4)
-	jmp	.LBB0_20
-.LBB0_22:                               #   in Loop: Header=BB0_7 Depth=2
+	jmp	.LBB0_22
+.LBB0_24:                               #   in Loop: Header=BB0_7 Depth=2
 	movq	-472(%rbp), %rax        # 8-byte Reload
 	movl	(%rax), %ecx
 	movq	-448(%rbp), %rdx        # 8-byte Reload
 	movl	%ecx, (%rdx)
 	jmp	.LBB0_7
-.LBB0_23:                               # =>This Inner Loop Header: Depth=1
+.LBB0_25:                               # =>This Inner Loop Header: Depth=1
 	movl	-484(%rbp), %eax        # 4-byte Reload
 	cmpl	-4(%rbp), %eax
 	movl	%eax, -488(%rbp)        # 4-byte Spill
-	jge	.LBB0_25
-# %bb.24:                               #   in Loop: Header=BB0_23 Depth=1
+	jge	.LBB0_27
+# %bb.26:                               #   in Loop: Header=BB0_25 Depth=1
 	movl	-488(%rbp), %eax        # 4-byte Reload
 	movslq	%eax, %rcx
 	movl	-408(%rbp,%rcx,4), %esi
@@ -284,8 +291,8 @@ main:                                   # @main
 	movl	-488(%rbp), %edx        # 4-byte Reload
 	addl	$1, %edx
 	movl	%edx, -484(%rbp)        # 4-byte Spill
-	jmp	.LBB0_23
-.LBB0_25:
+	jmp	.LBB0_25
+.LBB0_27:
 	xorl	%eax, %eax
 	movq	%rbp, %rsp
 	popq	%rbp

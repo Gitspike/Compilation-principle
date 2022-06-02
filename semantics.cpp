@@ -145,17 +145,6 @@ void semanticsListener::enterProgram_head(PascalSParser::Program_headContext *ct
 	// 主程序入栈
 	semantics::stack_st.insert_table(symbol);
 
-	// 测试
-	/*
-	auto float_value = llvm::ConstantFP::get(llvm::Type::getDoubleTy(*semantics::context), 11.11);
-	print_value("float(11.11): %lf\n", float_value);
-	auto double_value = llvm::ConstantFP::get(llvm::Type::getDoubleTy(*semantics::context), 22.22);
-	print_value("double(22.22): %lf\n", double_value);
-	auto char_value = llvm::ConstantInt::get(llvm::Type::getInt8Ty(*semantics::context), 'a');
-	print_value("char('a'): %c\n", char_value);
-	auto int_value = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), 32);
-	print_value("integer(32): %d\n", int_value);
-	*/
 }
 
 void semanticsListener::enterSingleConstDeclaration(PascalSParser::SingleConstDeclarationContext *ctx)
@@ -637,14 +626,17 @@ void semanticsListener::exitProgram(PascalSParser::ProgramContext *ctx)
 
 	// 输出汇编文件
 	std::error_code errorCode;
+	/* 不直接输出汇编文件，而是优化后通过其它方法讲 .ll 转换成汇编文件
 	std::string filename = ".tmp.main.s"; // 汇编文件名
 	llvm::raw_fd_ostream dest(filename, errorCode, llvm::sys::fs::OF_None);
 	llvm::legacy::PassManager pass;
 	llvm::CodeGenFileType type = llvm::CGFT_AssemblyFile; // 文件类型为汇编
 	// llvm::CodeGenFileType type = llvm::CGFT_ObjectFile;  // 文件类型为可执行文件
 	semantics::theTargetMachine->addPassesToEmitFile(pass, dest, nullptr, type);
+	
 	pass.run(*semantics::mod);
 	dest.flush();
+	*/
 	llvm::raw_fd_ostream dest_ll(".tmp.main.ll", errorCode, llvm::sys::fs::OF_None);
 	semantics::mod->print(dest_ll, nullptr); // 打印ir
 }
