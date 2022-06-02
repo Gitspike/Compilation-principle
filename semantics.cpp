@@ -645,7 +645,7 @@ void semanticsListener::exitProgram(PascalSParser::ProgramContext *ctx)
 	semantics::theTargetMachine->addPassesToEmitFile(pass, dest, nullptr, type);
 	pass.run(*semantics::mod);
 	dest.flush();
-	llvm::raw_fd_ostream dest_ll("test.ll", errorCode, llvm::sys::fs::OF_None);
+	llvm::raw_fd_ostream dest_ll(".tmp.main.ll", errorCode, llvm::sys::fs::OF_None);
 	semantics::mod->print(dest_ll, nullptr); // 打印ir
 }
 
