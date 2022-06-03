@@ -1612,9 +1612,9 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 			// auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
 
 			auto v = semantics::builder->CreateSDiv(left_llvm, right_llvm);
-			int r = atoi(left.c_str()) / atoi(right.c_str());
-			string result = to_string(r);
-			semantics::exp_value.push_back(result);
+			//int r = atoi(left.c_str()) / atoi(right.c_str());
+			//string result = to_string(r);
+			semantics::exp_value.push_back("0");
 			semantics::llvm_value.push_back(v);
 		}
 		else if ("real" == right_type || "real" == left_type)
@@ -1634,13 +1634,13 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 				semantics::llvm_value.push_back(v);
 			}
 			// semantics::builder->CreateMod(value1, value2);
-			double r = atof(left.c_str()) / atof(right.c_str());
-			r = r / 1.0;
+			/* double r = atof(left.c_str()) / atof(right.c_str());
+			r = r / 1.0; */
 			/* ostringstream os;
 			os << r;
 			string result(os.str()); */
-			string result = to_string(r);
-			semantics::exp_value.push_back(result);
+			//string result = to_string(r);
+			semantics::exp_value.push_back("0");
 		}
 	}
 	else if ("mod" == mulop)
@@ -1665,12 +1665,12 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 			// auto value2 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(*semantics::context), atoi(right.c_str()));
 
 			auto v = semantics::builder->CreateSRem(left_llvm, right_llvm);
-			int r = atoi(left.c_str()) % atoi(right.c_str());
+			//int r = atoi(left.c_str()) % atoi(right.c_str());
 			/* ostringstream os;
 			os << r;
 			string result(os.str()); */
-			string result = to_string(r);
-			semantics::exp_value.push_back(result);
+			//string result = to_string(r);
+			semantics::exp_value.push_back("0");
 			semantics::llvm_value.push_back(v);
 		}
 	}
@@ -1684,9 +1684,9 @@ void semanticsListener::exitMultiplyOperation(PascalSParser::MultiplyOperationCo
 		}
 		semantics::exp_type.push_back("integer");
 		auto v = semantics::builder->CreateSDiv(left_llvm, right_llvm);
-		int r = atoi(left.c_str()) / atoi(right.c_str());
-		string result = to_string(r);
-		semantics::exp_value.push_back(result);
+		//int r = atoi(left.c_str()) / atoi(right.c_str());
+		//string result = to_string(r);
+		semantics::exp_value.push_back("0");
 		semantics::llvm_value.push_back(v);
 	}
 	else if ("and" == mulop)
